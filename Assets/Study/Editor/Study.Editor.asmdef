@@ -3,7 +3,10 @@
     "rootNamespace": "Study.EditorTools",
     "references": [
         "Study.Quantum",
-        "Study.Runtime"
+        "Study.Runtime",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"

@@ -2,7 +2,9 @@
     "name": "Study.Runtime",
     "rootNamespace": "Study",
     "references": [
-        "Study.Quantum"
+        "Study.Quantum",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

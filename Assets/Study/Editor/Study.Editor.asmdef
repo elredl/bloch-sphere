@@ -1,0 +1,19 @@
+{
+    "name": "Study.Editor",
+    "rootNamespace": "Study.EditorTools",
+    "references": [
+        "Study.Quantum",
+        "Study.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

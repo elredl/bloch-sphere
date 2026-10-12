@@ -1,0 +1,49 @@
+C1: [Lesson] C1 narration starts after 22 warm-up frames (5.49s, settled=True)
+C1: lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=169.2ms real=300.0s at 3x
+C2: [Lesson] C2 narration starts after 22 warm-up frames (4.69s, settled=True)
+C2: lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=157.9ms real=300.0s at 3x
+C3: [Lesson] C3 narration starts after 22 warm-up frames (5.23s, settled=True)
+C3: lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=157.4ms real=300.0s at 3x
+
+item                                  sched |  C1 fired  C2 fired  C3 fired
+segment superposition start           0.000 |     0.169     0.158     0.151
+event set_state 0                     1.000 |     1.103     1.144     1.033
+pause1 onset                        150.000 |   150.035   150.089   150.079
+pause1 scripted arc                 165.000 |   165.124   165.015         -
+pause1 timeout arc (no learner yet)  185.000 |         -         -   185.045
+pause1 offset                       210.000 |   210.037   210.117   210.055
+segment bloch_sphere start          210.000 |   210.037   210.117   210.055
+event show angle_arcs               215.000 |   215.038   215.045   215.026
+event apply_gate Rz(180)            300.000 |   300.033   300.099   300.102
+event apply_gate Rz(180)            340.000 |   340.075   340.073   340.071
+event hide angle_arcs               380.000 |   380.015   380.145   380.116
+pause2 onset                        390.000 |   390.083   390.008   390.047
+pause2 scripted arc                 405.000 |   405.107   405.096         -
+pause2 timeout arc (no learner yet)  425.000 |         -         -   425.096
+pause2 offset                       450.000 |   450.071   450.021   450.050
+segment gates start                 450.000 |   450.071   450.021   450.050
+event set_state 0                   452.000 |   452.084   452.125   452.034
+event apply_gate X                  480.000 |   480.000   480.089   480.077
+event set_state +                   520.000 |   520.123   520.072   520.060
+event apply_gate Z                  530.000 |   530.105   530.114   530.084
+event set_state 0                   580.000 |   580.089   580.040   580.037
+event apply_gate H                  590.000 |   590.013   590.035   590.042
+pause3 onset                        630.000 |   630.065   630.035   630.023
+pause3 scripted arc                 645.000 |   645.064   645.010         -
+pause3 timeout arc (no learner yet)  665.000 |         -         -   665.036
+pause3 offset                       690.000 |   690.004   690.070   690.048
+segment measurement start           690.000 |   690.004   690.070   690.048
+event apply_gate H                  720.000 |   720.087   720.082   720.024
+event measure_demo +                760.000 |   760.064   760.016   760.065
+event set_state 0                   830.000 |   830.055   830.022   830.019
+pause4 onset                        840.000 |   840.028   840.066   840.059
+pause4 scripted arc                 855.000 |   855.089   855.046         -
+pause4 timeout arc (no learner yet)  875.000 |         -         -   875.157
+pause4 measurement demo             880.000 |   880.023   880.003   880.145
+pause4 offset                       900.000 |   900.000   900.000   900.000
+lesson end                          900.000 |   900.000   900.000   900.000
+
+C1: boundaries=13 maxLate(boundaries)=169.2ms pause lengths(scheduled)=[60.0, 60.0, 60.0, 60.0]
+C2: boundaries=13 maxLate(boundaries)=157.9ms pause lengths(scheduled)=[60.0, 60.0, 60.0, 60.0]
+C3: boundaries=13 maxLate(boundaries)=150.9ms pause lengths(scheduled)=[60.0, 60.0, 60.0, 60.0]
+boundary schedule identical across conditions: True

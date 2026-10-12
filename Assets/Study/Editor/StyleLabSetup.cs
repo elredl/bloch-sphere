@@ -1,4 +1,5 @@
 using System.Globalization;
+using Study.Lesson;
 using Study.Quantum;
 using Study.Visuals;
 using TMPro;
@@ -19,6 +20,7 @@ namespace Study.EditorTools
         const string FontsFolder = "Assets/Study/Fonts";
         const string PalettePath = "Assets/Study/Data/StylePalette.asset";
         const string ScenePath = "Assets/Study/Scenes/Lesson.unity";
+        const string TimelinePath = "Assets/Study/Data/lesson_timeline.json";
 
         // Seated participant: eye about 1.2 m above the floor. The sphere center sits
         // 0.25 m below eye level and 0.8 m forward. Calibration (Checkpoint 6) moves
@@ -151,6 +153,7 @@ namespace Study.EditorTools
             cam.farClipPlane = 50f;
             cam.allowMSAA = true;
             cameraObject.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = false;
+            cameraObject.AddComponent<AudioListener>();
 
             var environment = new GameObject("Environment");
             var styler = environment.AddComponent<EnvironmentStyler>();
@@ -159,9 +162,28 @@ namespace Study.EditorTools
             styler.enabled = false; // re-enable so it builds with the references set
             styler.enabled = true;
 
-            BuildSamplePanel(palette);
+            // The lesson: narration, timeline and pause behavior.
+            var lessonObject = new GameObject("Lesson");
+            lessonObject.AddComponent<AudioSource>();
+            var lesson = lessonObject.AddComponent<LessonController>();
+            Set(lesson, "timelineJson", AssetDatabase.LoadAssetAtPath<TextAsset>(TimelinePath));
+            Set(lesson, "state", state);
+            Set(lesson, "animator", animator);
+            Set(lesson, "angleArcs", sphere.GetComponentInChildren<AngleArcsView>());
+            var director = lessonObject.AddComponent<PauseDirector>();
+            Set(director, "lesson", lesson);
+            Set(director, "animator", animator);
+            Set(director, "dimmer", sphere.GetComponent<SphereDimmer>());
 
             EditorSceneManager.SaveScene(scene, ScenePath);
+        }
+
+        // Adds the style-lock sample panel to the open scene, for previews only.
+        // Not part of the Lesson scene: it would be visible in every condition.
+        public static string AddSamplePanel()
+        {
+            BuildSamplePanel(AssetDatabase.LoadAssetAtPath<StylePalette>(PalettePath));
+            return "sample panel added (do not save it into Lesson.unity)";
         }
 
         // A sample prediction panel (pause 1's P(0) format) for the style lock.

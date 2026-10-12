@@ -26,12 +26,15 @@ namespace Study.Visuals
         double startTime;
         double duration;
 
-        public void Play(Gate gate, double durationSeconds)
+        // startTime: when the arc was scheduled to begin, on Clock. Defaults to now.
+        // Passing the scheduled time means a frame that fires late doesn't shift
+        // the arc's end; the arc just catches up.
+        public void Play(Gate gate, double durationSeconds, double? startTime = null)
         {
             if (IsPlaying) Complete(); // never leave a gate half-applied
             activeGate = gate;
             startState = state.Current;
-            startTime = Clock();
+            this.startTime = startTime ?? Clock();
             duration = Math.Max(durationSeconds, 1e-3);
             Started?.Invoke(gate);
             Debug.Log($"[GateArc] start {gate} from {startState.Bloch}");

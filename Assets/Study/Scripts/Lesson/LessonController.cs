@@ -31,8 +31,9 @@ namespace Study.Lesson
         [Tooltip("Used when no session has set the condition (before Checkpoint 6's launch screen).")]
         [SerializeField] Condition devCondition = Condition.PassiveVR;
         [SerializeField] bool startOnPlay = true;
-        [Tooltip("Editor only: plays the narration faster (audio pitch) for dry runs. Builds always use 1.")]
-        [SerializeField, Range(1f, 3f)] float devPlaybackSpeed = 1f;
+        [Tooltip("Editor only: runs the lesson faster for dry runs. Up to 3x speeds up the narration (audio pitch); " +
+                 "above 3x the narration is silent and lesson time runs off frame time. Builds always use 1.")]
+        [SerializeField, Range(1f, 18f)] float devPlaybackSpeed = 1f;
 
         public event Action<LessonTimeline.Segment> SegmentStarted;
         public event Action<int, LessonTimeline.Segment, LessonTimeline.PauseTask, double> PauseStarted; // index, segment, task, onset
@@ -101,15 +102,23 @@ namespace Study.Lesson
             }
 
             BuildSchedule();
-            clock = new LessonClock(source);
+            double frameClockSpeed = 0;
+#if UNITY_EDITOR
+            if (devPlaybackSpeed > 3f) frameClockSpeed = devPlaybackSpeed;
+#endif
+            clock = new LessonClock(source, frameClockSpeed);
             animator.Clock = () => clock.Time;
             effects.Clock = () => clock.Time;
             flash.Clock = () => clock.Time;
             source.clip = narration;
             source.pitch = 1f;
 #if UNITY_EDITOR
-            source.pitch = devPlaybackSpeed;
-            if (devPlaybackSpeed != 1f) Debug.LogWarning($"[Lesson] Dev playback speed {devPlaybackSpeed}x (Editor only).");
+            source.pitch = Mathf.Min(devPlaybackSpeed, 3f);
+            // Fades and other frame-time effects keep up with the faster lesson.
+            UnityEngine.Time.timeScale = devPlaybackSpeed;
+            if (clock.IsFrameClock) source.mute = true;
+            if (devPlaybackSpeed != 1f) Debug.LogWarning($"[Lesson] Dev playback speed {devPlaybackSpeed}x (Editor only" +
+                                                         (clock.IsFrameClock ? ", silent frame-time clock)." : ")."));
 #endif
             Debug.Log($"[Lesson] {Config} ready. {Timeline.segments.Length} segments, {Timeline.segments.Length} pauses x " +
                       $"{Timeline.pauseSchedule.pauseLength}s, {Timeline.events.Length} events, duration {Timeline.lessonDuration}s, " +
@@ -162,6 +171,7 @@ namespace Study.Lesson
         public void DevSeek(double seconds)
         {
             source.time = (float)seconds;
+            clock.DevSeek(seconds);
             Debug.LogWarning($"[Lesson] Dev seek to {seconds:F1}s (Editor only).");
         }
 #endif
@@ -257,6 +267,8 @@ namespace Study.Lesson
             }
         }
 
+        float devSpeedForReport => UnityEngine.Time.timeScale;
+
         void EndLesson()
         {
             running = false;
@@ -267,7 +279,7 @@ namespace Study.Lesson
             Debug.Log(report.ToString());
             Debug.Log($"[Pacing] {Config} SUMMARY lessonTime={LessonTimeline.Seconds(clock.Time)} " +
                       $"scheduledTotal={LessonTimeline.Seconds(Timeline.lessonDuration)} pauses={pauses}" +
-                      $"maxLateness={maxLateness * 1000:F1}ms real={realSeconds:F1}s at {source.pitch}x");
+                      $"maxLateness={maxLateness * 1000:F1}ms real={realSeconds:F1}s at {devSpeedForReport}x");
             LessonEnded?.Invoke();
         }
     }

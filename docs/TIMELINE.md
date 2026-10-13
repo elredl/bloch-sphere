@@ -54,6 +54,24 @@ drift from the narration.
 | `rotationDeadline`, `timeoutArcMaxDuration` | Cond 3: the remaining rotation plays as a scripted arc |
 | `measurementDemoStart`, `measurementDemoEnd` | pause 4 demo, all conditions |
 
+## Condition 3 prompts and feedback
+
+The prompt, feedback and panel text for Condition 3 live in
+`Assets/Study/Data/pause_feedback.json`, one entry per pause task (matched by
+`id`). Answers use the same strings as the task's `choices`. Each wrong answer
+can appear in at most one misconception; unmapped wrong answers get
+`genericIncorrect`. The Edit Mode test `RealFeedback_IsValidAgainstTheTimeline`
+checks the file against the timeline.
+
+## Dry runs in the Editor
+
+`LessonDevTools.SetDevRun("condition,speed")` sets the dev condition and
+speed. Up to 3x the narration plays faster; above 3x (up to 18x) the run is
+silent and lesson time runs off frame time, capped per frame so hitches slow
+the run instead of skipping time. In Condition 3,
+`LessonDevTools.SimulateLearner("fast,wrong,slow,never")` plays a learner
+through the four pauses (profiles in `SimulatedLearner.Named`).
+
 ## Measurement seeds
 
 A demo's `seed` fixes its shot sequence, identical for every participant and

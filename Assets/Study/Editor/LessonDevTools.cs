@@ -98,6 +98,28 @@ namespace Study.EditorTools
             Object.DestroyImmediate(rt);
         }
 
+        // Play Mode, Condition 3. arg = one learner profile per pause, e.g. "fast,wrong,slow,never"
+        // (fewer than four: the last repeats). Profiles are in SimulatedLearner.Named.
+        public static string SimulateLearner(string arg)
+        {
+            var embodied = Object.FindAnyObjectByType<EmbodiedPause>() ?? throw new System.Exception("no EmbodiedPause in scene");
+            var learner = embodied.gameObject.GetComponent<SimulatedLearner>() ?? embodied.gameObject.AddComponent<SimulatedLearner>();
+            var profiles = System.Array.ConvertAll(arg.Split(','), name => SimulatedLearner.Named(name.Trim()));
+            learner.Configure(profiles, embodied, Object.FindAnyObjectByType<Study.Visuals.PredictionPanelView>(),
+                Object.FindAnyObjectByType<Study.Visuals.PositionMarkersView>());
+            return "simulated learner: " + arg;
+        }
+
+        // Moves assets (with their .meta files) to the OS trash, so a deletion can be undone.
+        // arg = paths separated by ';'.
+        public static string TrashAssets(string arg)
+        {
+            var failed = new System.Collections.Generic.List<string>();
+            AssetDatabase.MoveAssetsToTrash(arg.Split(';'), failed);
+            AssetDatabase.Refresh();
+            return failed.Count == 0 ? "trashed " + arg : "could not trash: " + string.Join(", ", failed);
+        }
+
         // Play Mode. Reports lesson time, audio position and running state.
         public static string Status()
         {

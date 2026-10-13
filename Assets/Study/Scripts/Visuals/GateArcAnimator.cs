@@ -8,6 +8,10 @@ namespace Study.Visuals
     // advancing the rotation angle and writing each intermediate state to
     // QubitState. Time comes from a swappable clock, so the lesson can drive
     // arcs from narration audio time and they cannot drift from the audio.
+    //
+    // Condition 3 "held" mode: BeginHeld starts the gate (axis shows, trail
+    // records) and the learner's grab sets the fraction directly; FinishFrom
+    // then plays the rest of the arc on the clock. Same arc, same events.
     public class GateArcAnimator : MonoBehaviour
     {
         [SerializeField] QubitState state;
@@ -19,13 +23,19 @@ namespace Study.Visuals
         public Func<double> Clock = () => Time.timeAsDouble;
 
         public bool IsPlaying => activeGate != null;
-        public double ScheduledEnd => startTime + duration;
+        public bool IsHeld => held;
+        // A held gate has no scheduled end until it is let go.
+        public double ScheduledEnd => held ? double.MaxValue : startTime + duration;
         public Gate ActiveGate => activeGate;
+        public double HeldFraction => heldFraction;
 
         Gate activeGate;
         Qubit startState;
         double startTime;
         double duration;
+        double fromFraction;
+        bool held;
+        double heldFraction;
 
         // startTime: when the arc was scheduled to begin, on Clock. Defaults to now.
         // Passing the scheduled time means a frame that fires late doesn't shift
@@ -35,22 +45,54 @@ namespace Study.Visuals
             if (IsPlaying) Complete(); // never leave a gate half-applied
             activeGate = gate;
             startState = state.Current;
+            held = false;
+            fromFraction = 0;
             this.startTime = startTime ?? Clock();
             duration = Math.Max(durationSeconds, 1e-3);
             Started?.Invoke(gate);
             Debug.Log($"[GateArc] start {gate} from {startState.Bloch}");
         }
 
+        // Starts a gate whose progress the learner controls (Condition 3).
+        public void BeginHeld(Gate gate)
+        {
+            if (IsPlaying) Complete();
+            activeGate = gate;
+            startState = state.Current;
+            held = true;
+            heldFraction = 0;
+            Started?.Invoke(gate);
+            Debug.Log($"[GateArc] held start {gate} from {startState.Bloch}");
+        }
+
+        // fraction of the gate's angle, 0..1. Only while held.
+        public void SetHeldFraction(double fraction)
+        {
+            if (!held) return;
+            heldFraction = Math.Max(0, Math.Min(1, fraction));
+            state.Set(GateArc.StateAt(startState, activeGate, heldFraction));
+        }
+
+        // Lets go of a held gate: the rest of the arc plays from where it is.
+        public void FinishFrom(double durationSeconds, double? startTime = null)
+        {
+            if (!held) return;
+            held = false;
+            fromFraction = heldFraction;
+            this.startTime = startTime ?? Clock();
+            duration = Math.Max(durationSeconds, 1e-3);
+        }
+
         void Update()
         {
-            if (!IsPlaying) return;
+            if (!IsPlaying || held) return;
             double fraction = (Clock() - startTime) / duration;
             if (fraction >= 1)
             {
                 Complete();
                 return;
             }
-            state.Set(GateArc.StateAt(startState, activeGate, Ease(fraction)));
+            state.Set(GateArc.StateAt(startState, activeGate, fromFraction + (1 - fromFraction) * Ease(Math.Max(0, fraction))));
         }
 
         // Snaps to the exact gate result and ends the animation.
@@ -59,6 +101,7 @@ namespace Study.Visuals
             Gate gate = activeGate;
             state.Set(gate.Apply(startState));
             activeGate = null;
+            held = false;
             Debug.Log($"[GateArc] end {gate.Name} at {state.Current.Bloch}, |v|={state.Current.Bloch.Length:F6}");
             Finished?.Invoke(gate);
         }

@@ -21,6 +21,7 @@ namespace Study.EditorTools
         const string PalettePath = "Assets/Study/Data/StylePalette.asset";
         const string ScenePath = "Assets/Study/Scenes/Lesson.unity";
         const string TimelinePath = "Assets/Study/Data/lesson_timeline.json";
+        const string FeedbackPath = "Assets/Study/Data/pause_feedback.json";
 
         // Seated participant: eye about 1.2 m above the floor. The sphere center sits
         // 0.25 m below eye level and 0.8 m forward. Calibration (Checkpoint 6) moves
@@ -140,6 +141,8 @@ namespace Study.EditorTools
             AddChild<AngleArcsView>(sphere, "Angle Arcs");
             AddChild<ArcTrailView>(sphere, "Arc Trail");
             AddChild<GateAxisView>(sphere, "Gate Axis");
+            var arrow = AddChild<GateDirectionView>(sphere, "Direction Arrow");
+            var markers = AddChild<PositionMarkersView>(sphere, "Position Markers");
             var vectorView = AddChild<StateVectorView>(sphere, "State Vector");
             var ghost = AddChild<StateVectorView>(sphere, "Ghost Vector");
             var ghostSo = new SerializedObject(ghost);
@@ -199,7 +202,20 @@ namespace Study.EditorTools
             Set(director, "dimmer", sphere.GetComponent<SphereDimmer>());
             Set(director, "demo", demo);
 
-            LessonScenePieces.AddGrabTarget(sphere, lesson, state);
+            // Condition 3: prompt/feedback panel, markers, arrow and the grab (inactive in Cond 1/2).
+            var predictionPanel = LessonScenePieces.AddPredictionPanel(palette, SphereCenter, DefaultEye);
+            var embodied = lessonObject.AddComponent<EmbodiedPause>();
+            var grab = LessonScenePieces.AddGrabTarget(sphere, lesson, state, embodied);
+            Set(embodied, "lesson", lesson);
+            Set(embodied, "animator", animator);
+            Set(embodied, "state", state);
+            Set(embodied, "panel", predictionPanel);
+            Set(embodied, "markers", markers);
+            Set(embodied, "arrow", arrow);
+            Set(embodied, "grab", grab);
+            Set(embodied, "feedbackJson", AssetDatabase.LoadAssetAtPath<TextAsset>(FeedbackPath));
+            Set(director, "embodied", embodied);
+            LessonScenePieces.AddEventSystem();
 
             // Headset rig (inactive in the saved scene) and the switch between it and the desktop camera.
             var (xrOrigin, interactors) = LessonScenePieces.AddXrRig();

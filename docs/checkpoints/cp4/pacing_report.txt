@@ -1,0 +1,109 @@
+Checkpoint 4 dry runs, Editor, 18x frame-time clock (lateness <= one 18x frame, 600 ms lesson time).
+
+== Pacing: C1, C2, C3 (run A) ==
+C1: [Lesson] C1 narration starts after 23 warm-up frames (6.88s, settled=True)
+C1: lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=600.0ms real=56.1s at 18x
+C2: [Lesson] C2 narration starts after 22 warm-up frames (6.01s, settled=True)
+C2: lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=600.0ms real=52.2s at 18x
+C3: [Lesson] C3 narration starts after 22 warm-up frames (6.19s, settled=True)
+C3: lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=592.3ms real=56.8s at 18x
+
+item                                  sched |  C1 fired  C2 fired  C3 fired
+segment superposition start           0.000 |     0.600     0.600     0.592
+event set_state 0                     1.000 |     1.200     1.200     1.157
+pause1 onset                        150.000 |   150.130   150.330   150.525
+pause1 learner rotation done        162.475 |         -         -   162.475
+pause1 scripted arc                 165.000 |   165.293   165.129         -
+pause1 offset                       210.000 |   210.160   210.464   210.133
+segment bloch_sphere start          210.000 |   210.160   210.464   210.133
+event show angle_arcs               215.000 |   215.262   215.159   215.315
+event apply_gate Rz(180)            300.000 |   300.421   300.252   300.370
+event apply_gate Rz(180)            340.000 |   340.545   340.122   340.184
+event hide angle_arcs               380.000 |   380.596   380.164   380.041
+pause2 onset                        390.000 |   390.419   390.541   390.280
+pause2 scripted arc                 405.000 |   405.077   405.119         -
+pause2 learner rotation done        405.795 |         -         -   405.795
+pause2 offset                       450.000 |   450.503   450.148   450.131
+segment gates start                 450.000 |   450.503   450.148   450.131
+event set_state 0                   452.000 |   452.241   452.548   452.466
+event apply_gate X                  480.000 |   480.057   480.412   480.108
+event set_state +                   520.000 |   520.317   520.139   520.369
+event apply_gate Z                  530.000 |   530.107   530.232   530.096
+event set_state 0                   580.000 |   580.060   580.323   580.507
+event apply_gate H                  590.000 |   590.538   590.234   590.296
+pause3 onset                        630.000 |   630.029   630.567   630.105
+pause3 scripted arc                 645.000 |   645.284   645.187         -
+pause3 learner rotation done        655.245 |         -         -   655.245
+pause3 offset                       690.000 |   690.018   690.432   690.217
+segment measurement start           690.000 |   690.018   690.432   690.217
+event apply_gate H                  720.000 |   720.391   720.175   720.229
+event measure_demo +                760.000 |   760.377   760.006   760.037
+event hide measurement_panel        820.000 |   820.418   820.093   820.173
+event set_state 0                   830.000 |   830.452   830.222   830.219
+pause4 onset                        840.000 |   840.052   840.475   840.416
+pause4 scripted arc                 855.000 |   855.052   855.418         -
+pause4 prediction timeout           865.000 |         -         -   865.578
+pause4 timeout arc                  875.000 |         -         -   875.156
+pause4 measurement demo             880.000 |   880.240   880.574   880.556
+pause4 offset                       900.000 |   900.000   900.000   900.000
+lesson end                          900.000 |   900.000   900.000   900.000
+
+C1: boundaries=13 maxLate(boundaries)=600.0ms pause lengths(scheduled)=[60.0, 60.0, 60.0, 60.0]
+C2: boundaries=13 maxLate(boundaries)=600.0ms pause lengths(scheduled)=[60.0, 60.0, 60.0, 60.0]
+C3: boundaries=13 maxLate(boundaries)=592.3ms pause lengths(scheduled)=[60.0, 60.0, 60.0, 60.0]
+boundary schedule identical across conditions: True
+
+== C3 run A events ==
+profiles: fast, wrong, generic, never
+[Event] t=155.286 prediction_response pause=1 answer=50 rt=5.286
+[Event] t=158.275 gate_press pause=1
+[Event] t=159.475 grab_start pause=1 mode=sim angle=0.0
+[Event] t=162.475 grab_end pause=1 angle=90.0 target=90.0 complete=1
+[Event] t=162.475 rotation_complete pause=1 by=learner
+[Event] t=163.675 feedback_shown pause=1 type=correct id=correct
+[Event] t=397.475 prediction_response pause=2 answer=-i rt=7.475
+[Event] t=400.446 gate_press pause=2
+[Event] t=401.046 grab_start pause=2 mode=sim angle=0.0
+[Event] t=405.795 grab_end pause=2 angle=90.0 target=90.0 complete=1
+[Event] t=405.795 rotation_complete pause=2 by=learner
+[Event] t=406.995 feedback_shown pause=2 type=misconception id=wrong_rotation_direction
+[Event] t=639.088 prediction_response pause=3 answer=1 rt=9.088
+[Event] t=642.088 gate_press pause=3
+[Event] t=643.288 grab_start pause=3 mode=sim angle=0.0
+[Event] t=651.665 grab_end pause=3 angle=155.5 target=180.0 complete=0
+[Event] t=652.845 grab_start pause=3 mode=sim angle=155.5
+[Event] t=655.245 grab_end pause=3 angle=180.0 target=180.0 complete=1
+[Event] t=655.245 rotation_complete pause=3 by=learner
+[Event] t=656.445 feedback_shown pause=3 type=misconception id=h_confused_with_x
+[Event] t=865.578 prediction_timeout pause=4
+[Event] t=875.156 rotation_timeout pause=4 gate_pressed=0 remaining=60.0
+[Event] t=891.351 feedback_shown pause=4 type=no_prediction id=no_prediction
+[Pacing] C3 SUMMARY lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=592.3ms real=56.8s at 18x
+
+== C3 run B events ==
+profiles: slow, late, fast, wrong
+[Event] t=172.366 prediction_response pause=1 answer=50 rt=22.366
+[Event] t=176.476 gate_press pause=1
+[Event] t=178.276 grab_start pause=1 mode=sim angle=0.0
+[Event] t=185.476 grab_end pause=1 angle=39.6 target=90.0 complete=0 forced=1
+[Event] t=185.476 rotation_timeout pause=1 gate_pressed=1 remaining=50.4
+[Event] t=187.876 feedback_shown pause=1 type=correct id=correct
+[Event] t=415.418 prediction_timeout pause=2
+[Event] t=420.087 gate_press pause=2
+[Event] t=421.287 grab_start pause=2 mode=sim angle=0.0
+[Event] t=424.287 grab_end pause=2 angle=90.0 target=90.0 complete=1
+[Event] t=424.287 rotation_complete pause=2 by=learner
+[Event] t=425.487 feedback_shown pause=2 type=no_prediction id=no_prediction
+[Event] t=635.192 prediction_response pause=3 answer=0 rt=5.192
+[Event] t=638.164 gate_press pause=3
+[Event] t=639.364 grab_start pause=3 mode=sim angle=0.0
+[Event] t=644.764 grab_end pause=3 angle=180.0 target=180.0 complete=1
+[Event] t=644.764 rotation_complete pause=3 by=learner
+[Event] t=645.964 feedback_shown pause=3 type=correct id=correct
+[Event] t=847.221 prediction_response pause=4 answer=50 rt=7.221
+[Event] t=850.221 gate_press pause=4
+[Event] t=851.421 grab_start pause=4 mode=sim angle=0.0
+[Event] t=855.021 grab_end pause=4 angle=60.0 target=60.0 complete=1
+[Event] t=855.021 rotation_complete pause=4 by=learner
+[Event] t=891.514 feedback_shown pause=4 type=misconception id=any_superposition_is_50_50
+[Pacing] C3 SUMMARY lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=600.0ms real=52.8s at 18x

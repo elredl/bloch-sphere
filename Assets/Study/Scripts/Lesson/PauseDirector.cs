@@ -9,10 +9,9 @@ namespace Study.Lesson
     // fills it, using the pause-relative times in the timeline's pauseSchedule.
     //
     //   Cond 1 / 2: at scriptedArcStart the gate axis appears and the arc plays.
-    //   Cond 3:     sphere dims at onset; the learner's prediction and rotation
-    //               come in Checkpoint 4. Until then the learner is treated as
-    //               never acting: at rotationDeadline the rotation plays as the
-    //               agreed timeout arc. Either way the end state is the same.
+    //   Cond 3:     sphere dims at onset; EmbodiedPause runs the prediction,
+    //               gate press, grab and feedback, with the timeout arc at
+    //               rotationDeadline. Either way the end state is the same.
     //   All:        pause 4 runs the measurement demo at measurementDemoStart.
     //   Nothing else is shown in Cond 1 / 2: no dimming, no prompt, no cues.
     public class PauseDirector : MonoBehaviour
@@ -21,6 +20,7 @@ namespace Study.Lesson
         [SerializeField] GateArcAnimator animator;
         [SerializeField] SphereDimmer dimmer;
         [SerializeField] MeasurementDemo demo;
+        [SerializeField] EmbodiedPause embodied;
 
         LessonTimeline.PauseTask task;
         int pauseIndex = -1;
@@ -48,11 +48,21 @@ namespace Study.Lesson
             arcDone = false;
             demoDone = !task.measurementDemo;
             if (lesson.Config.DimsAtPauses) dimmer.SetDimmed(true);
+            if (lesson.Config.LearnerRotates)
+            {
+                if (index == 0) embodied.Validate(lesson.Timeline);
+                embodied.Begin(index, task, pauseOnset);
+            }
         }
 
         void OnPauseEnded(int index)
         {
             if (index != pauseIndex) return;
+            if (lesson.Config.LearnerRotates)
+            {
+                arcDone |= embodied.RotationStarted;
+                embodied.End();
+            }
             // Safety net: the pause must never end without the operation applied.
             if (!arcDone) PlayArc(onset + lesson.Timeline.pauseSchedule.pauseLength, 0.001, "late arc (should not happen)");
             if (animator.IsPlaying) animator.Complete();
@@ -68,13 +78,9 @@ namespace Study.Lesson
             LessonTimeline.PauseSchedule p = lesson.Timeline.pauseSchedule;
             double sincePause = lesson.Time - onset;
 
-            if (!arcDone)
-            {
-                if (!lesson.Config.LearnerRotates && sincePause >= p.scriptedArcStart)
-                    PlayArc(onset + p.scriptedArcStart, p.arcDuration, "scripted arc");
-                else if (lesson.Config.LearnerRotates && sincePause >= p.rotationDeadline)
-                    PlayArc(onset + p.rotationDeadline, p.timeoutArcMaxDuration, "timeout arc (no learner yet)");
-            }
+            if (lesson.Config.LearnerRotates) embodied.Tick(p);
+            else if (!arcDone && sincePause >= p.scriptedArcStart)
+                PlayArc(onset + p.scriptedArcStart, p.arcDuration, "scripted arc");
 
             if (!demoDone && sincePause >= p.measurementDemoStart)
             {

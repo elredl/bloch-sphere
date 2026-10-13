@@ -1,4 +1,5 @@
 using System.Linq;
+using Study.Lesson;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
@@ -7,25 +8,29 @@ using UnityEngine.Rendering.Universal;
 
 namespace Study.EditorTools
 {
-    // Quest 3 APK of the Lesson scene. arg = "bloom" or "nobloom": post-processing on the
-    // headset camera, for the frame-rate comparison. The scene on disk is not changed.
+    // Quest 3 APK of the Lesson scene. arg = "2" or "3": the condition the build runs, until
+    // Checkpoint 6's launch screen picks it per participant. Post-processing is off on every
+    // camera (no bloom, decided at Checkpoint 3). The scene on disk is not changed.
     public static class QuestBuild
     {
         const string ScenePath = "Assets/Study/Scenes/Lesson.unity";
 
         public static string BuildApk(string arg)
         {
-            bool bloom = arg == "bloom";
+            if (arg != "2" && arg != "3") throw new System.ArgumentException("arg must be the condition: 2 or 3");
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
 
             var scene = EditorSceneManager.OpenScene(ScenePath);
-            foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                cam.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing = bloom;
-            // A copy, so the bloom setting never reaches Lesson.unity. Overwrites one left by a crashed build.
+            foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include))
+                cam.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing = false;
+            var lesson = new SerializedObject(Object.FindAnyObjectByType<LessonController>());
+            lesson.FindProperty("devCondition").enumValueIndex = int.Parse(arg) - 1;
+            lesson.ApplyModifiedPropertiesWithoutUndo();
+            // A copy, so the build settings never reach Lesson.unity. Overwrites one left by a crashed build.
             EditorSceneManager.SaveScene(scene, "Assets/Study/Scenes/Lesson_QuestBuild.unity", true);
 
-            string path = $"Builds/Quest/lesson_{(bloom ? "bloom" : "nobloom")}.apk";
+            string path = $"Builds/Quest/lesson_c{arg}.apk";
             var options = new BuildPlayerOptions
             {
                 scenes = new[] { "Assets/Study/Scenes/Lesson_QuestBuild.unity" },

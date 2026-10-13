@@ -5,14 +5,16 @@ using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.OpenXR;
 
 namespace Study.EditorTools
 {
-    // Checkpoint 3 parts of the Lesson scene, added by StyleLabSetup.BuildLessonScene.
+    // Checkpoint 3 and 4 parts of the Lesson scene, added by StyleLabSetup.BuildLessonScene.
     public static class LessonScenePieces
     {
         const string RigPrefab = "Assets/Samples/XR Interaction Toolkit/3.5.1/Starter Assets/Prefabs/XR Origin (XR Rig).prefab";
@@ -62,7 +64,15 @@ namespace Study.EditorTools
             return disabled.Count == 0 ? "no hand features were enabled" : "disabled: " + string.Join(", ", disabled);
         }
 
-        public static GameObject AddGrabTarget(GameObject sphere, LessonController lesson, QubitState state)
+        // Controller rays click world-space UI (trigger) through this; grip grabs the vector.
+        public static void AddEventSystem()
+        {
+            var go = new GameObject("Event System");
+            go.AddComponent<EventSystem>();
+            go.AddComponent<XRUIInputModule>();
+        }
+
+        public static QubitGrabTarget AddGrabTarget(GameObject sphere, LessonController lesson, QubitState state, EmbodiedPause pause)
         {
             var go = new GameObject("Grab Target");
             go.transform.SetParent(sphere.transform, false);
@@ -76,8 +86,102 @@ namespace Study.EditorTools
             so.FindProperty("rig").objectReferenceValue = sphere.GetComponent<BlochSphereRig>();
             so.FindProperty("interactable").objectReferenceValue = interactable;
             so.FindProperty("grabCollider").objectReferenceValue = collider;
+            so.FindProperty("pause").objectReferenceValue = pause;
             so.ApplyModifiedProperties();
-            return go;
+            return target;
+        }
+
+        // Condition 3 prompt and feedback panel, upper left of the sphere: the histogram
+        // panel's mirror image. Canvas units are mm. 240 x 270 mm:
+        //   title 240-262, body from 36 below the top, answer row 100-134,
+        //   hint 56-94, gate button 12-50 (feedback: body down to 48, answer line 12-40).
+        public static PredictionPanelView AddPredictionPanel(StylePalette palette, Vector3 sphereCenter, Vector3 eye)
+        {
+            const float W = 240, H = 270;
+            var canvasObject = new GameObject("Prediction Panel", typeof(RectTransform));
+            var canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvasObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+            var group = canvasObject.AddComponent<CanvasGroup>();
+            var rect = (RectTransform)canvasObject.transform;
+            rect.sizeDelta = new Vector2(W, H);
+            rect.localScale = Vector3.one * 0.001f;
+            rect.position = sphereCenter + new Vector3(-0.38f, 0.12f, -0.25f);
+            rect.rotation = Quaternion.LookRotation(rect.position - eye);
+
+            Image background = Box(rect, "Background", 0, 0, W, H);
+            background.raycastTarget = true; // the panel catches rays aimed at it, so they don't fall through
+            Image accentBar = Box(rect, "Accent Bar", 0, 0, 3, H);
+            Image accentLine = Box(rect, "Accent Line", 0, H - 2, W, H);
+            TextMeshProUGUI title = Text(rect, "Title", "PREDICT", 14, 12, H - 30, W - 12, H - 8, TextAlignmentOptions.TopLeft);
+
+            TextMeshProUGUI body = Text(rect, "Body", "", 16, 12, 140, W - 12, H - 36, TextAlignmentOptions.TopLeft);
+            body.textWrappingMode = TextWrappingModes.Normal;
+            body.rectTransform.anchorMax = Vector2.one;
+            body.rectTransform.offsetMin = new Vector2(12, 140);
+            body.rectTransform.offsetMax = new Vector2(-12, -36);
+
+            TextMeshProUGUI locked = Text(rect, "Your Prediction", "", 15, 12, 100, W - 12, 134, TextAlignmentOptions.Left);
+            TextMeshProUGUI hint = Text(rect, "Hint", "", 13, 12, 56, W - 12, 94, TextAlignmentOptions.BottomLeft);
+            hint.textWrappingMode = TextWrappingModes.Normal;
+
+            var buttons = new Button[5];
+            var frames = new Image[5];
+            var fills = new Image[5];
+            var labels = new TextMeshProUGUI[5];
+            const float bw = 40, gap = 4f; // five across the 216 mm text width
+            for (int i = 0; i < 5; i++)
+            {
+                float x = 12 + i * (bw + gap);
+                (buttons[i], frames[i], fills[i], labels[i]) = PanelButton(rect, "Choice " + i, x, 100, x + bw, 134, 13);
+            }
+            var (gateButton, gateFrame, gateFill, gateLabel) = PanelButton(rect, "Gate Button", 30, 12, W - 30, 50, 15);
+
+            var view = canvasObject.AddComponent<PredictionPanelView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("palette").objectReferenceValue = palette;
+            so.FindProperty("group").objectReferenceValue = group;
+            so.FindProperty("background").objectReferenceValue = background;
+            SetArray(so, "accents", accentBar, accentLine);
+            so.FindProperty("title").objectReferenceValue = title;
+            so.FindProperty("body").objectReferenceValue = body;
+            so.FindProperty("lockedLine").objectReferenceValue = locked;
+            so.FindProperty("hint").objectReferenceValue = hint;
+            SetArray(so, "choiceButtons", buttons);
+            SetArray(so, "choiceFrames", frames);
+            SetArray(so, "choiceFills", fills);
+            SetArray(so, "choiceLabels", labels);
+            so.FindProperty("gateButton").objectReferenceValue = gateButton;
+            so.FindProperty("gateFrame").objectReferenceValue = gateFrame;
+            so.FindProperty("gateFill").objectReferenceValue = gateFill;
+            so.FindProperty("gateLabel").objectReferenceValue = gateLabel;
+            so.ApplyModifiedProperties();
+            view.ApplyStyle();
+            group.alpha = 0; // hidden until a Condition 3 pause
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            return view;
+        }
+
+        // A neon-framed button: frame rectangle, inset fill (the click target), centered label.
+        static (Button, Image, Image, TextMeshProUGUI) PanelButton(RectTransform parent, string name,
+            float x0, float y0, float x1, float y1, float fontSize)
+        {
+            Image frame = Box(parent, name, x0, y0, x1, y1);
+            Image fill = Box(frame.rectTransform, "Fill", 1.2f, 1.2f, x1 - x0 - 1.2f, y1 - y0 - 1.2f);
+            fill.raycastTarget = true;
+            var button = frame.gameObject.AddComponent<Button>();
+            button.transition = Selectable.Transition.None;
+            button.targetGraphic = fill;
+            TextMeshProUGUI label = Text(frame.rectTransform, "Label", "", fontSize, 0, 0, x1 - x0, y1 - y0, TextAlignmentOptions.Center);
+            return (button, frame, fill, label);
+        }
+
+        static void SetArray(SerializedObject so, string field, params Object[] values)
+        {
+            var property = so.FindProperty(field);
+            property.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++) property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
         }
 
         // Histogram panel, upper right of the sphere (mirror of where prompts go), inside the

@@ -86,14 +86,28 @@ amount, then freeze.
   sees H undo itself (interference).
 - The timeline sets each pause's start state explicitly. At pause onset the app
   checks the live state against it and logs an error if they differ.
-- Mapping wrong answers to misconceptions lives in an editable data file.
+- Mapping wrong answers to misconceptions lives in an editable data file:
+  `Assets/Study/Data/pause_feedback.json` (prompt text, correct text, neutral
+  `noPrediction` text, one text per misconception with the answers that map to
+  it, and a `genericIncorrect` text). Wrong answers with no mapped misconception
+  get the generic text, logged as feedback type `generic_incorrect` (decided at
+  Checkpoint 3 review): pause 1 answers 75 % and 25 %, pause 2 answer |->,
+  pause 4 answer 25 %. All wording is a draft until reviewed.
 
 ### Prediction format
 
 - Six positions (pauses 2, 3): the learner points the controller ray at one of
-  six glowing, labeled markers on the sphere and pulls the trigger.
+  six glowing, labeled markers on the sphere and pulls the trigger. Each marker
+  is a ring in its axis color with its own ket label at full brightness; they
+  appear only while the prompt is open.
 - P(0) (pauses 1, 4): five buttons on a panel.
 - The first answer locks. Answer and response time are logged.
+- Controls (XRI defaults): trigger picks answers and presses buttons, grip
+  grabs the vector. Orientation (Checkpoint 6) practises both.
+- The prompt and feedback share one panel, upper left of the sphere (the
+  histogram's mirror image), 240 x 270 mm. Title PREDICT while the prompt is
+  open, TURN from the gate press (or the prediction timeout), then CORRECT /
+  NOT QUITE / RESULT for feedback.
 
 ### Pause schedule (times from pause onset, identical every pause)
 
@@ -103,7 +117,7 @@ amount, then freeze.
 | 15-18 s | (learner working) | axis appears, scripted arc |
 | 25 s | prediction deadline: if unanswered, prompt removed, `prediction_timeout` logged, gate unlocks anyway | |
 | 35 s | rotation deadline: remaining rotation plays as a scripted arc (<= 3 s), `rotation_timeout` logged | |
-| on completion | feedback shown until 60 s (pauses 1-3) | |
+| on completion | feedback shown until 60 s (pauses 1-3); pause 4 hides the panel until its feedback | |
 | 40-51 s | pause 4 only: measurement demo, all conditions | same |
 | 51-60 s | pause 4 only: feedback (Cond 3) | |
 | 60 s | undim, narration resumes | narration resumes |
@@ -127,11 +141,30 @@ amount, then freeze.
   it turns one way about the axis and stops at the target angle (no overshoot).
   A curved arrow shows the direction; a light haptic tick fires on pushes the
   wrong way. This makes the Cond 3 arc identical to the scripted arc.
+- Ratchet behavior (Checkpoint 4): the grab point's angle about the gate axis
+  drives the vector. The vector follows the hand forward, stays put while the
+  hand goes back (one tick per 10 deg pulled back), and resumes once the hand
+  passes it again. A grab never makes the vector jump; it is measured from
+  where the hand was when the grab started. Releasing early leaves the vector
+  where it is; the learner can grab again.
+- The arrow is a short amber arc just outside the sphere from the tip along
+  the path (about 36 deg ahead, never past the target), so it shows the way
+  without showing the end point. It shrinks away as the target is reached.
+- After a release within tolerance the last few degrees ease in at the
+  scripted arc's speed. The timeout arc plays the remaining fraction of the
+  turn in `timeoutArcMaxDuration` x that fraction (3 s for a whole turn).
 - The gate completes when the learner releases within +/-10 deg of the target;
   the vector then eases to the exact target state. Widen to +/-15 deg only if
   dry runs show it is fiddly.
 - Grab works up close and by ray (distance grab) so the seated learner never
-  leans or stands. The grab start event logs which mode was used.
+  leans or stands. The grab start event logs which mode was used. The grab
+  point is fixed to the controller like the end of a stick: with a ray it sits
+  out at the sphere, so pointing moves it. A grab that starts with the
+  controller within 15 cm of the tip is logged as `near`, otherwise `ray`.
+- The grab handle exists in the shared Cond 2/3 build but only switches on in
+  Cond 3, and only between the gate press and the end of the rotation.
+- Cond 2 learners see their controllers (same as Cond 3) but get no pointer
+  rays and nothing to interact with (confirmed at Checkpoint 3 review).
 
 ### Measurement demo
 
@@ -244,6 +277,9 @@ At each pause: sphere dims -> prediction prompt -> gate press -> ratchet
 rotation about the gate axis -> feedback chosen by which wrong answer was
 picked (misconception mapping in a data file). Controllers only, no hand
 tracking. Deadlines and timeout behavior as in the pause schedule above.
+Implemented in `EmbodiedPause` (flow), `RatchetRotation` (grab math, unit
+tested), `QubitGrabTarget` (XR grab), `PredictionPanelView`,
+`PositionMarkersView` and `GateDirectionView`.
 
 ## Telemetry
 
@@ -260,6 +296,14 @@ achieved frame rate (periodic summary, a check, not tracking).
 
 CSV, one file per session, flushed after every event. No names or identifying
 information, only codes like P07.
+
+Since Checkpoint 4 the Cond 3 pause events go through `StudyEvents.Log` and
+appear as `[Event]` log lines: `prediction_response` (answer, rt from pause
+onset), `prediction_timeout`, `gate_press`, `grab_start` (mode),
+`grab_end` (angle, target, complete, forced on timeout), `rotation_complete`,
+`rotation_timeout` (gate_pressed, remaining degrees), `feedback_shown` (type:
+correct, misconception, generic_incorrect or no_prediction; id). Checkpoint 6
+writes them to the CSV.
 
 ## Session flow and experimenter tools
 

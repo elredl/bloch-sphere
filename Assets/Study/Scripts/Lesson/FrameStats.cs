@@ -4,8 +4,9 @@ using UnityEngine.XR;
 
 namespace Study.Lesson
 {
-    // Logs frame timing every few seconds so the Quest frame rate can be read from
-    // `adb logcat -s Unity` during a full lesson. Logs only; draws nothing.
+    // Logs frame timing every few seconds so the frame rate can be read from the log
+    // (Quest: `adb logcat -s Unity`; desktop: Player.log) during a full lesson.
+    // Logs only; draws nothing.
     public class FrameStats : MonoBehaviour
     {
         [SerializeField] float reportSeconds = 10f;
@@ -33,13 +34,13 @@ namespace Study.Lesson
             slow = 0;
         }
 
-        // Headset refresh rate in Hz, or 0 with no headset (Editor, desktop).
+        // Headset refresh rate in Hz; with no headset, the monitor's.
         float DisplayRefreshRate()
         {
             SubsystemManager.GetSubsystems(displays);
             foreach (XRDisplaySubsystem display in displays)
                 if (display.running && display.TryGetDisplayRefreshRate(out float rate)) return rate;
-            return 0f;
+            return (float)Screen.currentResolution.refreshRateRatio.value;
         }
     }
 }

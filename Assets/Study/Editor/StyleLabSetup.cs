@@ -38,7 +38,8 @@ namespace Study.EditorTools
             string fonts = EnsureFonts();
             EnsurePalette();
             BuildLessonScene();
-            return fonts + " | palette and Lesson scene built | " + LessonScenePieces.DisableHandTracking();
+            return fonts + " | palette and Lesson scene built | " + LessonScenePieces.DisableHandTracking() +
+                   " | " + StudyBuild.DisableDesktopXr();
         }
 
         static string EnsureFonts()
@@ -227,6 +228,7 @@ namespace Study.EditorTools
             SetArray(viewSo, "interactors", interactors);
             viewSo.ApplyModifiedProperties();
             lessonObject.AddComponent<FrameStats>(); // frame timing to the log, for the Quest frame-rate check
+            Set(lessonObject.AddComponent<DesktopDisplay>(), "lesson", lesson); // Condition 1 screen, vsync, cursor
             styler.Apply(); // style the XR camera's background too
 
             EditorSceneManager.SaveScene(scene, ScenePath);

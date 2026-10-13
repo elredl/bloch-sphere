@@ -326,6 +326,16 @@ writes them to the CSV.
 - Cond 1 camera: fixed at the calibrated-equivalent eye point, pitched to
   center the sphere, 60 deg vertical FOV. Cursor hidden during the lesson; the
   mouse is used only in orientation and on the end screen.
+- Cond 1 display (Checkpoint 5, `DesktopDisplay`): 1920 x 1080 borderless
+  fullscreen, vsync on (one frame per refresh at 60 Hz), not resizable,
+  cursor hidden and locked from lesson start to lesson end. The app logs a
+  `[Display]` line with what the monitor actually gave and warns if it is not
+  1920 x 1080 at 60 Hz; `[Frames]` lines report the frame rate as in the
+  headset. XR never starts on desktop: the desktop target has no XR loader and
+  XR start-up is off (Quest keeps OpenXR). Build: `StudyBuild.BuildDesktop`.
+  Only Linux desktop support is installed; a Windows build uses the same
+  settings once that module is added. Dev launch flags `-dev-windowed` and
+  `-dev-mute` exist for dry runs only.
 - Then the lesson, then an end screen telling the participant to remove the
   headset (or look away from the monitor) and see the experimenter. The
   experimenter end screen shows the data file name and event count.

@@ -306,7 +306,8 @@ correct, misconception, generic_incorrect or no_prediction; id).
 
 Checkpoint 6 (`StudySession`, `SessionLog`): every `StudyEvents.Log` call goes to
 the session CSV, columns `utc,session_s,lesson_s,participant,condition,stratum,event,fields`
-(`lesson_s` blank outside the lesson; `fields` is `key=value key=value`). Rows are
+with `app_version` after `stratum` (`lesson_s` blank outside the lesson; `fields` is
+`key=value key=value`). Rows are
 flushed to disk one by one; the file is created with CreateNew, so it is never
 overwritten. Session events: `session_start` (source allocation/manual, app and
 device), `calibration` (eye height, yaw corrected), `orientation_start`,
@@ -314,7 +315,9 @@ device), `calibration` (eye height, yaw corrected), `orientation_start`,
 `orientation_incomplete`, `orientation_end`, `lesson_start`, `segment_start`,
 `pause_onset`, `pause_offset`, `pause_state_mismatch`, `measurement_demo`,
 `lesson_end`, `break_start` / `break_end` (duration), `hmd_removed` (reason
-app_paused, focus_lost or user_absent) / `hmd_resume` (duration),
+app_paused, focus_lost or user_absent; head offset from the calibrated eye) /
+`hmd_returned` (head offset) / `hmd_resume` (duration), `tracking_origin_changed`,
+`display_rate` (Quest refresh rate after the 90 Hz request),
 `focus_lost` / `focus_back` (desktop), `abort` (step, input), `withdrawal`
 (reason), `frame_rate` (every 60 s), `session_end` (status, events).
 
@@ -351,13 +354,20 @@ app_paused, focus_lost or user_absent) / `hmd_resume` (duration),
   `-dev-mute` exist for dry runs only.
 - Implementation (Checkpoint 6): `LaunchScreen` (Launch scene, build index 0),
   `SessionFlow`, `Orientation`, `SessionInput`, `EndScreen` (Lesson scene).
-  Participant wording is in `Data/session_text.json`. Codes are typed as the
-  prefix P plus digits. The data folder holds `allocation.csv`, the session files
+  Participant wording is in `Data/session_text.json`; `tools/export_participant_text.py`
+  compiles all participant-facing text into `docs/PARTICIPANT_TEXT.md`. The launch screen
+  lists the unused codes for this device and shows the code only, never the condition;
+  codes are P plus exactly two digits (P01 to P99), also in allocation.csv; manual
+  entry (fallback only) refuses codes that are in allocation.csv. The data folder holds `allocation.csv`, the session files
   and `session_index.csv` (every session started on the device; `pull_data`
   leaves it, so a code can't be reused later either). In the Editor the data
   folder is `DevData/` in the project. Calibration on Quest: the experimenter holds
-  A (right controller) 1 s while the participant sits upright facing forward; then
-  "pull the trigger when ready" starts orientation. Orientation practises the
+  A (right controller) 1 s while the participant sits upright facing forward; the pose is
+  recorded once the head has been still for 1 s (within 1.5 cm and 3 deg; after 10 s it
+  is taken anyway and logged still=0). A does nothing except here and on the headset
+  resume screen, where it recalibrates. Head position relative to the calibrated eye is
+  logged at removal and remount, and `tracking_origin_changed` when the runtime moves the
+  origin. Then "pull the trigger when ready" starts orientation. Orientation practises the
   steps in lesson order (select, press, rotate). The cube turns 90 deg about a
   vertical axis with the lesson's ratchet and tolerance.
 - Then the lesson, then an end screen telling the participant to remove the

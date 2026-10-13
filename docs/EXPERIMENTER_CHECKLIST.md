@@ -6,6 +6,8 @@ on the launch screen, before the participant puts on the headset or sits down.
 ## Once, before the first session day
 
 - [ ] Install the current builds (see `BUILD_INFO.md`); note the version from `BUILD_STAMP.txt`.
+- [ ] Quest: uninstall the old template app ("My project"): `adb uninstall com.DefaultCompany.VRTemplate`.
+      Only "Qubit Lesson" should be in the library under Unknown Sources.
 - [ ] Quest: copy the allocation with `tools/push_allocation.sh allocation.csv`
       (Windows: `tools\push_allocation.ps1`). Start the app once first if the push fails.
 - [ ] Desktop: copy `allocation.csv` into the data folder shown at the bottom of the launch screen.
@@ -32,14 +34,17 @@ Room: non-swivel, non-rolling chair; same chair position for every participant.
 ## Each session
 
 1. Start the app. The launch screen appears.
-2. Type the participant number (P is fixed; 07 for P07) and press START.
-   - Refused codes: not in allocation.csv, already used on this device, or allocated to the
-     other device (Quest runs conditions 2 and 3; desktop runs 1). Check the code; do not
-     use MANUAL to get past a refusal unless the protocol says so.
-3. Check the confirmation (code, condition, stratum) and press CONFIRM.
+2. Pick the participant's code from the list (it shows only codes from allocation.csv that are
+   unused and belong on this device: Quest runs conditions 2 and 3, desktop runs 1). The screen
+   never shows the condition. If the code is not listed, check the session sheet: it may have
+   been used already or belong to the other device. MANUAL is only for when allocation.csv is
+   unusable (exactly two digits, P01 to P99; codes in allocation.csv are refused there).
+3. Check the code on the confirmation screen and press CONFIRM.
 4. **Quest**: put the headset on the participant (still holding the controllers yourself).
    Ask them to sit upright and look straight ahead, then hold **A** on the right controller
-   for 1 second. Hand over the controllers.
+   for 1 second. The app records the eye height once the head has been still for a second
+   (the screen keeps saying "Sit upright and look straight ahead" until then). Hand over the
+   controllers. A does nothing at any other time, except on the resume screen after a break.
    **Desktop**: seat the participant at the monitor.
 5. The participant pulls the trigger (desktop: clicks) when ready. Orientation runs exactly
    2:00, then the lesson (15:00) starts by itself. Do not talk during the lesson.
@@ -51,7 +56,9 @@ Room: non-swivel, non-rolling chair; same chair position for every participant.
 
 - Desktop break: press **B** to pause, **B** again to resume.
 - Quest break: the participant takes off the headset; the lesson pauses. When it is back on,
-  the participant pulls the trigger to continue.
+  the participant pulls the trigger to continue. If the sphere is no longer straight ahead at
+  the right height (the Quest may move its tracking origin), hold **A** on the resume screen
+  first to recalibrate (participant upright, looking ahead), then the participant pulls the trigger.
 - Stop the session (withdrawal): Quest: hold **both grips and click in both thumbsticks** for
   3 seconds (ring fills). Desktop: hold **Esc** for 2 seconds. On the end screen press
   **Experimenter** and pick the reason: discomfort, participant request or equipment failure.

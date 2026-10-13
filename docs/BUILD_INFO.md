@@ -12,11 +12,23 @@ Run a build from the Editor through the live command runner:
 
     LiveCommands/tools/lc.sh '{"action":"call_static","typeName":"Study.EditorTools.StudyBuild","methodName":"BuildQuest","arg":""}' 3000
 
-Each build writes `BUILD_STAMP.txt` next to its output (version, commit, time, Unity
-version, package). The version is `1.0+<commit>`, with `-dirty` if the working tree had
-uncommitted changes, and every session file records it (`session_start app=...`).
-**Build study builds from a clean, committed tree** so the version names exactly the
-code that ran.
+## Identity and version
+
+| Item | Value |
+|---|---|
+| Product name | Qubit Lesson (shown in the Quest library and the desktop window; neutral by design) |
+| Company | Qupacabras |
+| Package ID | `edu.colostate.qupacabras.qubitlesson` (Quest and desktop) |
+| Version | **1.0.0** (`StudyBuild.Version`) |
+
+All of these are set by `StudyBuild.ConfigureIdentity`, which every build runs. The version
+is written into every row of every session file (column `app_version`) and into
+`session_start app=...`. **Bump `StudyBuild.Version` for every new build that runs
+participants**, so the data always says which build produced it.
+
+Each build also writes `BUILD_STAMP.txt` next to its output: version, commit (with
+`-dirty` if the study's code, data or scenes had uncommitted changes), time, Unity
+version, product and package. Build study builds from a clean, committed tree.
 
 Before building after any change to the scene builders, rebuild the scenes:
 `StyleLabSetup.BuildAll` (fonts, palette, Launch and Lesson scenes, build scene list,
@@ -36,16 +48,22 @@ hand tracking off, desktop XR off).
 
 | Setting | Value |
 |---|---|
-| Package | `com.DefaultCompany.VRTemplate` (shown as "My project" in the Quest library, under Unknown Sources) |
+| Package | `edu.colostate.qupacabras.qubitlesson` (shown as "Qubit Lesson" in the Quest library, under Unknown Sources) |
 | Scripting | IL2CPP, ARM64 |
 | Android SDK | min 34, target 34 |
 | Refresh rate | 90 Hz requested at start-up (`DisplayRate`); the launch screen shows the actual rate |
 | Hand tracking | off (controllers only) |
 | MSAA | 4x |
-| Data folder | `/sdcard/Android/data/com.DefaultCompany.VRTemplate/files` |
+| Data folder | `/sdcard/Android/data/edu.colostate.qupacabras.qubitlesson/files` |
 
 Install: `adb install -r Builds/Quest/lesson.apk` (keeps the data folder). Uninstalling
 the app deletes its data folder, including `session_index.csv`: pull the data first.
+
+The old template app (`com.DefaultCompany.VRTemplate`, "My project") is a different app
+after the rename. Remove it from the headset so nobody launches it:
+`adb uninstall com.DefaultCompany.VRTemplate` (its data folder holds only test sessions).
+adb ships with Unity: `~/Unity/Hub/Editor/6000.6.0f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb`;
+the `tools/` scripts find it there if adb is not on the PATH.
 
 ## Desktop settings
 
@@ -54,15 +72,15 @@ the app deletes its data folder, including `session_index.csv`: pull the data fi
 | Scripting | Mono (only the Linux Mono module is installed) |
 | Display | 1920 x 1080 borderless fullscreen, vsync, 60 Hz expected; checked and logged at start |
 | XR | off (no loader, no start-up) |
-| Data folder | Linux `~/.config/unity3d/DefaultCompany/My project/`; Windows `%USERPROFILE%\AppData\LocalLow\DefaultCompany\My project\` |
+| Data folder | Linux `~/.config/unity3d/Qupacabras/Qubit Lesson/`; Windows `%USERPROFILE%\AppData\LocalLow\Qupacabras\Qubit Lesson\` |
 
-A Windows build needs "Windows Build Support (Mono)" added in Unity Hub; the same
-settings apply. Dry-run flags (never in a session): `-dev-windowed`, `-dev-mute`.
+The study desktop runs Linux for now. A Windows build would need "Windows Build Support
+(Mono)" added in Unity Hub; the same settings apply. Dry-run flags (never in a session): `-dev-windowed`, `-dev-mute`.
 
 ## Logs
 
 - Quest: `adb logcat -s Unity` (look for `[Display]`, `[Frames]`, `[Session]`, `[Event]`).
-- Desktop: `~/.config/unity3d/DefaultCompany/My project/Player.log`.
+- Desktop: `~/.config/unity3d/Qupacabras/Qubit Lesson/Player.log`.
 
 ## Known build-time message
 

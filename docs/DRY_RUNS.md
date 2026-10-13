@@ -26,11 +26,11 @@ pull the data afterwards. Each "Check" is what must be true for the row to pass.
 
 | # | Device | Cond | Path | Check | Result | Notes |
 |---|---|---|---|---|---|---|
-| D1 | Quest | 3 | Start the app | Launch footer: `display 90 Hz`, battery shown, build version matches `BUILD_STAMP.txt` | | |
-| D2 | Quest | 3 | Calibration (hold A), ready, orientation | Sphere and practice cube 0.25 m below eye, 0.8 m ahead, facing you; `calibration plausible=1`; rays select rings; grip turns the cube | | |
+| D1 | Quest | 3 | Start the app | Only "Qubit Lesson" in the library; launch footer: `display 90 Hz`, battery, `Qubit Lesson 1.0.0`; code list shows only unused C2/C3 codes, no conditions | | |
+| D2 | Quest | 3 | Calibration (hold A), ready, orientation | Calibration waits for a still head (`calibration still=1`); A pressed later in the lesson does nothing; sphere and practice cube 0.25 m below eye, 0.8 m ahead, facing you; `plausible=1`; rays select rings; grip turns the cube | | |
 | D3 | Quest | 3 | Full lesson, real time, your own answers | Pacing (pull the CSV: pause onsets at 150/390/630/840 s); `[Frames]` 90 Hz with few missed frames; narration in sync | | |
 | D4 | Quest | 2 | Full lesson, real time | No rays during the lesson; controllers visible; no prompts or dimming; pacing as D3 | | |
-| D5 | Quest | 3 | Take the headset off for ~20 s during a pause, put it back, pull trigger | `hmd_removed` then `hmd_resume`; lesson time frozen across it; narration resumes where it stopped; what reason was logged | | |
+| D5 | Quest | 3 | Take the headset off for ~20 s during a pause, put it back, pull trigger | `hmd_removed` then `hmd_resume`; lesson time frozen across it; narration resumes where it stopped; what reason was logged. **Where is the sphere after remount?** Compare `head_dx/dy/dz/head_yaw` in `hmd_removed` and `hmd_returned`, and look for `tracking_origin_changed`. If it moved, try hold-A recalibrate on the resume screen | | |
 | D6 | Quest | 2 | Same as D5 during narration | As D5; record what the Quest did to audio while off | | |
 | D7 | Quest | 3 | Press the Meta button mid-lesson, close the menu | Pauses (`hmd_removed reason=focus_lost`) and resumes with the trigger | | |
 | D8 | Quest | 3 | Abort with both grips + both thumbsticks 3 s; pick a reason | Ring fills; end screen; `withdrawal` logged | | |

@@ -18,6 +18,7 @@
     "breakTitle": "PAUSED",
     "breakKey": "The lesson is paused.",
     "breakResumeVr": "Pull the trigger to continue.",
+    "breakResumeHint": "Experimenter: hold A to recalibrate if the view has moved.",
     "abortHold": "Keep holding to stop the session.",
 
     "endTitle": "THANK YOU",

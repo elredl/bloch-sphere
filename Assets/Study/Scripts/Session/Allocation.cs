@@ -30,14 +30,17 @@ namespace Study.Session
         }
 
         readonly Dictionary<string, Entry> entries = new Dictionary<string, Entry>();
+        readonly List<Entry> ordered = new List<Entry>(); // file order, for the launch screen's list
         readonly List<string> errors = new List<string>();
 
         public IReadOnlyList<string> Errors => errors;
         public bool IsValid => errors.Count == 0;
         public int Count => entries.Count;
 
-        // Codes go into file names, so only letters, digits and '-' (e.g. P07).
-        static readonly Regex CodePattern = new Regex("^[A-Z0-9-]{1,16}$");
+        // P and exactly CodeDigits digits (P01 to P99), so "P7" and "P07" can never both exist.
+        // For more than 99 participants, raise CodeDigits (and use the new width for every code).
+        public const int CodeDigits = 2;
+        static readonly Regex CodePattern = new Regex("^P[0-9]{" + CodeDigits + "}$");
 
         public static string NormalizeCode(string code) => (code ?? "").Trim().ToUpperInvariant();
 
@@ -64,7 +67,11 @@ namespace Study.Session
             }
             if (!headerSeen) allocation.errors.Add("the file is empty");
             else if (allocation.entries.Count == 0 && allocation.errors.Count == 0) allocation.errors.Add("no participant rows");
-            if (!allocation.IsValid) allocation.entries.Clear();
+            if (!allocation.IsValid)
+            {
+                allocation.entries.Clear();
+                allocation.ordered.Clear();
+            }
             return allocation;
         }
 
@@ -79,15 +86,21 @@ namespace Study.Session
             string code = NormalizeCode(cells[0]);
             string conditionText = cells[1].Trim();
             string stratum = cells[2].Trim().ToLowerInvariant();
-            if (!IsValidCode(code)) errors.Add($"line {lineNumber}: code '{cells[0].Trim()}' (letters, digits and '-' only)");
+            if (!IsValidCode(code)) errors.Add($"line {lineNumber}: code '{cells[0].Trim()}' (must be P and {CodeDigits} digits, e.g. P07)");
             else if (entries.ContainsKey(code)) errors.Add($"line {lineNumber}: {code} appears twice");
             if (conditionText != "1" && conditionText != "2" && conditionText != "3")
                 errors.Add($"line {lineNumber}: condition '{conditionText}' (must be 1, 2 or 3)");
             if (Array.IndexOf(Strata, stratum) < 0)
                 errors.Add($"line {lineNumber}: stratum '{cells[2].Trim()}' (must be {string.Join(" or ", Strata)})");
             if (errors.Count == 0)
-                entries[code] = new Entry(code, (Condition)int.Parse(conditionText), stratum);
+            {
+                var entry = new Entry(code, (Condition)int.Parse(conditionText), stratum);
+                entries[code] = entry;
+                ordered.Add(entry);
+            }
         }
+
+        public IReadOnlyList<Entry> Entries => ordered;
 
         public bool TryGet(string code, out Entry entry) => entries.TryGetValue(NormalizeCode(code), out entry);
     }

@@ -63,6 +63,12 @@ namespace Study.Session
         float timeScaleBeforeBreak = 1f;
         bool appFocused = true, appPaused;
         string awayReason;
+        readonly StillnessDetector stillness = new StillnessDetector();
+        bool calibrating;
+        float calibratingSince;
+        string calibrationReason;
+        const float StillTimeoutSeconds = 10f; // never stuck: calibrate anyway, logged still=0
+        readonly System.Collections.Generic.List<XRInputSubsystem> inputSubsystems = new System.Collections.Generic.List<XRInputSubsystem>();
 
         void Awake()
         {
@@ -86,7 +92,13 @@ namespace Study.Session
                 session = StudySession.Start("DEV" + DateTime.Now.ToString("HHmmss"), lesson.Config.Condition, "novice", "dev");
             }
             headset = lesson.Config.UsesHeadset && XRSettings.isDeviceActive;
-            if (headset) StartCoroutine(LogDisplayRate());
+            if (headset)
+            {
+                StartCoroutine(LogDisplayRate());
+                // A system recenter or a remount can move the tracking origin, and the sphere with it.
+                SubsystemManager.GetSubsystems(inputSubsystems);
+                foreach (XRInputSubsystem s in inputSubsystems) s.trackingOriginUpdated += OnTrackingOriginUpdated;
+            }
             lesson.LessonEnded += OnLessonEnded;
             orientation.Finished += StartLesson;
             overlay.Hide();
@@ -123,6 +135,26 @@ namespace Study.Session
         {
             if (lesson != null) lesson.LessonEnded -= OnLessonEnded;
             if (orientation != null) orientation.Finished -= StartLesson;
+            foreach (XRInputSubsystem s in inputSubsystems) s.trackingOriginUpdated -= OnTrackingOriginUpdated;
+        }
+
+        void OnTrackingOriginUpdated(XRInputSubsystem s)
+        {
+            if (session != null && !session.Finished)
+                StudyEvents.Log("tracking_origin_changed", $"step={StepName} {HeadOffset()}");
+        }
+
+        string StepName => step.ToString().ToLowerInvariant();
+
+        // Where the head is relative to the calibrated eye point (stage space, so it is what the
+        // participant sees: dz < 0 means further from the sphere), and its yaw away from the sphere.
+        string HeadOffset()
+        {
+            if (!headset) return "";
+            Transform head = xrOrigin.Camera.transform;
+            Vector3 local = stage.InverseTransformPoint(head.position) - new Vector3(0, DefaultEyeHeight, 0);
+            float yaw = Vector3.SignedAngle(stage.forward, Vector3.ProjectOnPlane(head.forward, Vector3.up), Vector3.up);
+            return $"head_dx={local.x:F3} head_dy={local.y:F3} head_dz={local.z:F3} head_yaw={yaw:F1}";
         }
 
         void EnterCalibrate()
@@ -137,7 +169,28 @@ namespace Study.Session
             DesktopDisplay.SetCursorHidden(false);
         }
 
-        void Calibrate()
+        // A (held 1 s) starts it; the pose is taken once the head has been still for 1 s.
+        void BeginCalibration(string reason)
+        {
+            calibrating = true;
+            calibrationReason = reason;
+            calibratingSince = Time.unscaledTime;
+            stillness.Clear();
+        }
+
+        // Returns true when calibration has been applied.
+        bool TickCalibration()
+        {
+            Transform head = xrOrigin.Camera.transform;
+            stillness.Add(Time.unscaledTime, head.position, head.forward);
+            bool timedOut = Time.unscaledTime - calibratingSince > StillTimeoutSeconds;
+            if (!stillness.IsStill && !timedOut) return false;
+            calibrating = false;
+            Calibrate(calibrationReason, !timedOut);
+            return true;
+        }
+
+        void Calibrate(string reason, bool still)
         {
             Transform head = xrOrigin.Camera.transform;
             float eye = head.position.y - xrOrigin.transform.position.y; // the origin is the tracked floor
@@ -147,8 +200,9 @@ namespace Study.Session
             xrOrigin.MoveCameraToWorldLocation(new Vector3(0, head.position.y, 0));
             stage.position = new Vector3(0, eye - DefaultEyeHeight, 0);
             bool plausible = eye > 0.9f && eye < 1.6f; // seated eye heights
-            StudyEvents.Log("calibration", $"source=headset eye_height={eye:F3} yaw_corrected={yawBefore:F1} " +
-                                           $"moved={new Vector2(headBefore.x, headBefore.z).magnitude:F3} plausible={(plausible ? 1 : 0)}");
+            StudyEvents.Log("calibration", $"source=headset reason={reason} still={(still ? 1 : 0)} eye_height={eye:F3} " +
+                                           $"yaw_corrected={yawBefore:F1} moved={new Vector2(headBefore.x, headBefore.z).magnitude:F3} " +
+                                           $"plausible={(plausible ? 1 : 0)}");
             if (!plausible) Debug.LogWarning($"[Session] calibration eye height {eye:F2} m is outside the seated range; check the floor level.");
         }
 
@@ -210,16 +264,13 @@ namespace Study.Session
 
             switch (step)
             {
+                // A does something only here and on the headset resume screen.
                 case Step.Calibrate:
-                    if (input.CalibratePressed)
-                    {
-                        Calibrate();
-                        EnterReady();
-                    }
+                    if (!calibrating && input.CalibratePressed) BeginCalibration("start");
+                    if (calibrating && TickCalibration()) EnterReady();
                     break;
                 case Step.Ready:
-                    if (headset && input.CalibratePressed) Calibrate(); // the experimenter may redo it
-                    else if (input.TriggerPressed || input.MouseClicked) StartOrientation();
+                    if (input.TriggerPressed || input.MouseClicked) StartOrientation();
                     break;
                 case Step.Orientation:
                 case Step.Lesson:
@@ -228,7 +279,13 @@ namespace Study.Session
                         if (breakKind == BreakKind.Key) EndBreak("key");
                         else BeginBreak(BreakKind.Key);
                     }
-                    if (breakKind == BreakKind.Headset && awaitingResume && input.TriggerPressed) EndBreak("trigger");
+                    if (breakKind == BreakKind.Headset && awaitingResume)
+                    {
+                        // Optional: if the view moved while the headset was off, the experimenter recalibrates.
+                        if (!calibrating && input.CalibratePressed) BeginCalibration("resume");
+                        if (calibrating) TickCalibration();
+                        else if (input.TriggerPressed) EndBreak("trigger");
+                    }
                     break;
             }
             UpdateOverlay();
@@ -261,14 +318,15 @@ namespace Study.Session
             if (away)
             {
                 awayReason = reason;
-                StudyEvents.Log("hmd_removed", $"reason={reason} step={step.ToString().ToLowerInvariant()}");
+                calibrating = false;
+                StudyEvents.Log("hmd_removed", $"reason={reason} step={StepName} {HeadOffset()}");
                 if ((step == Step.Orientation || step == Step.Lesson) && breakKind == BreakKind.None) BeginBreak(BreakKind.Headset);
                 awaitingResume = false;
             }
             else
             {
                 if (breakKind == BreakKind.Headset) awaitingResume = true; // "pull the trigger to continue"
-                else StudyEvents.Log("hmd_returned", $"away_reason={awayReason}");
+                StudyEvents.Log("hmd_returned", $"away_reason={awayReason} step={StepName} {HeadOffset()}");
             }
         }
 
@@ -293,9 +351,10 @@ namespace Study.Session
         {
             double duration = session.SessionSeconds - breakStart;
             StudyEvents.Log(breakKind == BreakKind.Headset ? "hmd_resume" : "break_end",
-                $"duration={duration:F2} ended_by={endedBy} step={step.ToString().ToLowerInvariant()}");
+                $"duration={duration:F2} ended_by={endedBy} step={StepName}");
             breakKind = BreakKind.None;
             awaitingResume = false;
+            calibrating = false;
             if (step == Step.Lesson) lesson.SetBreak(false);
             else
             {
@@ -309,7 +368,7 @@ namespace Study.Session
 
         void UpdateOverlay()
         {
-            string title = null, body = null;
+            string title = null, body = null, footer = "";
             float ring = -1;
             if (step != Step.End && input.AbortProgress > 0)
             {
@@ -318,7 +377,12 @@ namespace Study.Session
                 ring = input.AbortProgress;
             }
             else if (breakKind == BreakKind.Key) (title, body) = (text.breakTitle, text.breakKey);
-            else if (breakKind == BreakKind.Headset) (title, body) = (text.breakTitle, awaitingResume ? text.breakResumeVr : text.breakKey);
+            else if (calibrating) (title, body) = (text.calibrationTitle, text.calibrationVr);
+            else if (breakKind == BreakKind.Headset)
+            {
+                (title, body) = (text.breakTitle, awaitingResume ? text.breakResumeVr : text.breakKey);
+                if (awaitingResume) footer = text.breakResumeHint;
+            }
             else if (step == Step.Calibrate) (title, body) = (text.calibrationTitle, text.calibrationVr);
             else if (step == Step.Ready) (title, body) = (text.readyTitle, headset ? text.readyVr : text.readyDesktop);
 
@@ -328,6 +392,7 @@ namespace Study.Session
                 return;
             }
             overlay.Show(title, body);
+            overlay.SetFooter(footer);
             overlay.SetRing(ring);
         }
 

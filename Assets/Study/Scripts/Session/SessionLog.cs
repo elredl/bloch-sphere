@@ -13,14 +13,15 @@ namespace Study.Session
     //   utc          wall-clock time of the event, ISO 8601
     //   session_s    seconds since the session started (launch screen confirmed)
     //   lesson_s     lesson time (narration clock), blank outside the lesson
+    //   app_version  the app version that wrote the row (StudyBuild.Version)
     //   event        event type; fields: "key=value key=value"
     public sealed class SessionLog : IDisposable
     {
-        public const string Header = "utc,session_s,lesson_s,participant,condition,stratum,event,fields";
+        public const string Header = "utc,session_s,lesson_s,participant,condition,stratum,app_version,event,fields";
 
         readonly FileStream stream;
         readonly StreamWriter writer;
-        readonly string code, stratum;
+        readonly string code, stratum, appVersion;
         readonly int condition;
 
         public string FilePath { get; }
@@ -33,9 +34,10 @@ namespace Study.Session
             $"{code}_C{condition}_{localTime.ToString("yyyyMMdd-HHmm", CultureInfo.InvariantCulture)}.csv";
 
         // Throws IOException if the file already exists.
-        public SessionLog(string directory, string code, int condition, string stratum, DateTime localTime)
+        public SessionLog(string directory, string code, int condition, string stratum, string appVersion, DateTime localTime)
         {
             this.code = code;
+            this.appVersion = appVersion;
             this.condition = condition;
             this.stratum = stratum;
             Directory.CreateDirectory(directory);
@@ -57,6 +59,7 @@ namespace Study.Session
             row.Append(',').Append(Cell(code));
             row.Append(',').Append(condition.ToString(CultureInfo.InvariantCulture));
             row.Append(',').Append(Cell(stratum));
+            row.Append(',').Append(Cell(appVersion));
             row.Append(',').Append(Cell(type));
             row.Append(',').Append(Cell(fields ?? ""));
             WriteLine(row.ToString());

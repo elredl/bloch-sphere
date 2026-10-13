@@ -61,15 +61,36 @@ namespace Study.EditorTools
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
         }
 
-        const string BaseVersion = "1.0";
+        // App identity. Participants see the product name in the Quest library, so it is neutral
+        // (nothing about conditions or hypotheses). The package / company name set the data
+        // folder: Quest /sdcard/Android/data/<package>/files, Linux ~/.config/unity3d/<company>/<product>.
+        // Changing any of these later installs a separate app with its own data folder.
+        public const string ProductName = "Qubit Lesson";
+        public const string CompanyName = "Qupacabras";
+        public const string PackageId = "edu.colostate.qupacabras.qubitlesson";
+        // Bump for every build that runs participants; the session files record it (app_version).
+        public const string Version = "1.0.0";
 
-        public static string BuildVersion()
+        public static string ConfigureIdentity(string arg = null)
+        {
+            PlayerSettings.productName = ProductName;
+            PlayerSettings.companyName = CompanyName;
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, PackageId);
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone, PackageId);
+            PlayerSettings.bundleVersion = Version;
+            PlayerSettings.Android.bundleVersionCode = 1;
+            AssetDatabase.SaveAssets();
+            return $"{ProductName} / {CompanyName} / {PackageId} / {Version}";
+        }
+
+        // The commit the build came from, for BUILD_STAMP.txt. "-dirty": the study's own code,
+        // data, scenes or packages had uncommitted changes (builds and Play Mode rewrite some Unity
+        // settings and the dynamic font atlases by themselves, so those don't count).
+        public static string BuildCommit(string arg = null)
         {
             string commit = Git("rev-parse --short HEAD");
-            // Only the study's own code, data, scenes and packages count: builds and Play Mode rewrite
-            // some Unity settings and the dynamic font atlases by themselves.
             bool dirty = Git("status --porcelain --untracked-files=no -- Assets/Study :!Assets/Study/Fonts Packages").Length > 0;
-            return commit.Length == 0 ? BaseVersion : $"{BaseVersion}+{commit}{(dirty ? "-dirty" : "")}";
+            return commit.Length == 0 ? "unknown" : commit + (dirty ? "-dirty" : "");
         }
 
         static string Git(string args)
@@ -95,17 +116,18 @@ namespace Study.EditorTools
         }
 
         // BUILD_STAMP.txt next to the build: what was built, from which commit, when.
-        static void WriteStamp(BuildReport report, string version, string path)
+        static void WriteStamp(BuildReport report, string path)
         {
             string folder = System.IO.Path.GetDirectoryName(path);
             System.IO.File.WriteAllText(System.IO.Path.Combine(folder, "BUILD_STAMP.txt"),
                 $"file      {System.IO.Path.GetFileName(path)}\n" +
                 $"result    {report.summary.result}\n" +
-                $"version   {version}\n" +
-                $"commit    {Git("rev-parse HEAD")}\n" +
+                $"version   {Version}\n" +
+                $"commit    {BuildCommit()} ({Git("rev-parse HEAD")})\n" +
                 $"built     {System.DateTime.Now:yyyy-MM-dd HH:mm}\n" +
                 $"unity     {Application.unityVersion}\n" +
                 $"target    {report.summary.platform}\n" +
+                $"product   {ProductName} ({CompanyName})\n" +
                 $"package   {PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(report.summary.platform)))}\n");
         }
 
@@ -130,14 +152,9 @@ namespace Study.EditorTools
                 target = target,
                 options = BuildOptions.None,
             };
-            // The version names the commit, so every session file (session_start app=...) says
-            // exactly which build ran it. "-dirty": built with uncommitted changes.
-            string version = BuildVersion();
-            PlayerSettings.bundleVersion = version;
+            ConfigureIdentity();
             BuildReport report = BuildPipeline.BuildPlayer(options);
-            WriteStamp(report, version, path);
-            PlayerSettings.bundleVersion = BaseVersion; // keep ProjectSettings unchanged by the stamp
-            AssetDatabase.SaveAssets();
+            WriteStamp(report, path);
 
             var s = report.summary;
             string errors = string.Join(" | ", report.steps.SelectMany(step => step.messages)

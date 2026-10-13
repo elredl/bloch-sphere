@@ -12,7 +12,7 @@ namespace Study.Session
         public string calibrationTitle, calibrationVr, readyTitle, readyVr, readyDesktop;
         public string practiceTitle, selectVr, selectDesktop, pressVr, pressDesktop, pressLabel;
         public string rotateVr, rotateDesktop, roundDone;
-        public string breakTitle, breakKey, breakResumeVr, abortHold;
+        public string breakTitle, breakKey, breakResumeVr, breakResumeHint, abortHold;
         public string endTitle, endCompletedVr, endCompletedDesktop, endStoppedVr, endStoppedDesktop, experimenterButton;
 
         public static SessionText FromJson(string json)

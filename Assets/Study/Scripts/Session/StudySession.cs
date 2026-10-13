@@ -45,7 +45,7 @@ namespace Study.Session
             Condition = condition;
             Stratum = stratum;
             Source = source;
-            Log = new SessionLog(directory, code, (int)condition, stratum, DateTime.Now);
+            Log = new SessionLog(directory, code, (int)condition, stratum, Application.version, DateTime.Now);
             startRealtime = Time.realtimeSinceStartupAsDouble;
         }
 

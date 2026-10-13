@@ -208,7 +208,7 @@ namespace Study.EditorTools
         // Calibration, ready, break and abort-hold messages: in front of the viewer, following the head.
         public static StudyPanelView AddOverlay(StylePalette palette)
         {
-            var layout = new Layout { W = 280, H = 140, Body = new Vector4(12, 12, 230, 104), Ring = new Vector4(238, 90, 270, 122) };
+            var layout = new Layout { W = 280, H = 140, Body = new Vector4(12, 34, 230, 104), Footer = new Vector4(12, 8, 268, 30), FooterFont = 9, Ring = new Vector4(238, 90, 270, 122) };
             var panel = AddPanel("Session Overlay", palette, layout, Vector3.zero, Quaternion.identity, null);
             panel.GetComponent<Canvas>().sortingOrder = 10;
             AddBacking(panel, palette);

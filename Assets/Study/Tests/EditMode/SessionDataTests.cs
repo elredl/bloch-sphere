@@ -22,6 +22,7 @@ namespace Study.Tests
             Assert.IsTrue(a.TryGet(" p01 ", out e));
             Assert.AreEqual(Condition.Desktop2D, e.Condition);
             Assert.IsFalse(a.TryGet("P04", out _));
+            CollectionAssert.AreEqual(new[] { "P01", "P02", "P03" }, System.Linq.Enumerable.Select(a.Entries, x => x.Code), "file order");
         }
 
         [Test]
@@ -37,6 +38,9 @@ namespace Study.Tests
         [TestCase("participant_code,condition,stratum\nP01,1,expert\n", "stratum")]
         [TestCase("participant_code,condition,stratum\nP01,1,novice\nP01,2,novice\n", "twice")]
         [TestCase("participant_code,condition,stratum\nP 01,1,novice\n", "code")]
+        [TestCase("participant_code,condition,stratum\nP7,1,novice\n", "code")]
+        [TestCase("participant_code,condition,stratum\nP007,1,novice\n", "code")]
+        [TestCase("participant_code,condition,stratum\nX07,1,novice\n", "code")]
         [TestCase("participant_code,condition,stratum\nP01,1\n", "columns")]
         [TestCase("participant_code,condition,stratum\n", "no participant rows")]
         [TestCase("", "empty")]
@@ -61,7 +65,7 @@ namespace Study.Tests
             var time = new DateTime(2026, 10, 20, 14, 32, 0);
             try
             {
-                using (var log = new SessionLog(dir, "P07", 3, "novice", time))
+                using (var log = new SessionLog(dir, "P07", 3, "novice", "1.0.0", time))
                 {
                     log.Write(new DateTime(2026, 10, 20, 12, 32, 1, 250, DateTimeKind.Utc), 1.25, double.NaN, "session_start", "a=1 b=2");
                     log.Write(new DateTime(2026, 10, 20, 12, 33, 0, DateTimeKind.Utc), 60, 12.5, "note", "text=\"x,y\"");
@@ -72,9 +76,9 @@ namespace Study.Tests
                 }
                 string[] lines = File.ReadAllLines(Path.Combine(dir, "P07_C3_20261020-1432.csv"));
                 Assert.AreEqual(SessionLog.Header, lines[0]);
-                Assert.AreEqual("2026-10-20T12:32:01.250Z,1.250,,P07,3,novice,session_start,a=1 b=2", lines[1]);
-                Assert.AreEqual("2026-10-20T12:33:00.000Z,60.000,12.500,P07,3,novice,note,\"text=\"\"x,y\"\"\"", lines[2]);
-                Assert.Throws<IOException>(() => new SessionLog(dir, "P07", 3, "novice", time));
+                Assert.AreEqual("2026-10-20T12:32:01.250Z,1.250,,P07,3,novice,1.0.0,session_start,a=1 b=2", lines[1]);
+                Assert.AreEqual("2026-10-20T12:33:00.000Z,60.000,12.500,P07,3,novice,1.0.0,note,\"text=\"\"x,y\"\"\"", lines[2]);
+                Assert.Throws<IOException>(() => new SessionLog(dir, "P07", 3, "novice", "1.0.0", time));
                 Assert.AreEqual(3, File.ReadAllLines(Path.Combine(dir, "P07_C3_20261020-1432.csv")).Length, "the existing file is untouched");
             }
             finally

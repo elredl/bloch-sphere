@@ -6,11 +6,17 @@
 # The files are deleted from the headset only if every one arrived with the same size.
 # session_index.csv (the list of codes already used) is copied but stays on the headset.
 set -euo pipefail
-PKG="${STUDY_PACKAGE:-com.DefaultCompany.VRTemplate}"
+# adb: from PATH, else the copy that ships with Unity's Android support.
+ADB="$(command -v adb || true)"
+if [ -z "$ADB" ]; then
+  for c in "$HOME"/Unity/Hub/Editor/*/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb; do [ -x "$c" ] && ADB="$c"; done
+fi
+[ -n "$ADB" ] || { echo "adb not found: install Android platform tools"; exit 1; }
+adb() { "$ADB" "$@"; }
+PKG="${STUDY_PACKAGE:-edu.colostate.qupacabras.qubitlesson}"
 REMOTE="/sdcard/Android/data/$PKG/files"
 DEST_ROOT="${1:-study_data}"
 
-command -v adb >/dev/null || { echo "adb not found: install Android platform tools"; exit 1; }
 [ "$(adb get-state 2>/dev/null)" = "device" ] || { echo "no headset: connect it and allow USB debugging"; exit 1; }
 
 mapfile -t files < <(adb shell "ls $REMOTE/ 2>/dev/null" | tr -d '\r' | grep -E '_C[123]_[0-9]{8}-[0-9]{4}\.csv$' || true)

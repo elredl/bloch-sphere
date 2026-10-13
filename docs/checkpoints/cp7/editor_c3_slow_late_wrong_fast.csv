@@ -1,0 +1,65 @@
+utc,session_s,lesson_s,participant,condition,stratum,event,fields
+2026-10-13T20:58:38.975Z,0.005,,DEV145838,3,novice,session_start,source=dev app=1.0 unity=6000.6.0f1 platform=LinuxEditor device=PC
+2026-10-13T20:58:38.988Z,0.018,,DEV145838,3,novice,calibration,source=desktop_fixed eye_height=1.200
+2026-10-13T20:58:43.290Z,4.314,,DEV145838,3,novice,focus_lost,
+2026-10-13T20:58:43.293Z,4.317,,DEV145838,3,novice,focus_back,
+2026-10-13T20:58:43.299Z,4.323,,DEV145838,3,novice,focus_lost,
+2026-10-13T20:58:46.556Z,7.575,,DEV145838,3,novice,orientation_start,duration=120 input=mouse
+2026-10-13T20:58:46.566Z,7.585,,DEV145838,3,novice,orientation_step,step=select round=1 t=1.17
+2026-10-13T20:58:46.643Z,7.662,,DEV145838,3,novice,orientation_step,step=press round=1 t=2.53
+2026-10-13T20:58:46.702Z,7.721,,DEV145838,3,novice,orientation_grab,round=1 mode=dev t=3.59
+2026-10-13T20:58:46.835Z,7.854,,DEV145838,3,novice,orientation_grab,round=1 mode=dev t=5.97
+2026-10-13T20:58:46.912Z,7.931,,DEV145838,3,novice,orientation_step,step=rotate round=1 t=7.39
+2026-10-13T20:58:48.806Z,9.823,,DEV145838,3,novice,focus_back,
+2026-10-13T20:58:49.314Z,10.331,,DEV145838,3,novice,orientation_step,step=select round=2 t=15.27
+2026-10-13T20:58:49.459Z,10.475,,DEV145838,3,novice,orientation_step,step=press round=2 t=17.53
+2026-10-13T20:58:49.544Z,10.560,,DEV145838,3,novice,orientation_grab,round=2 mode=dev t=19.38
+2026-10-13T20:58:49.752Z,10.768,,DEV145838,3,novice,orientation_grab,round=2 mode=dev t=23.15
+2026-10-13T20:58:49.829Z,10.845,,DEV145838,3,novice,orientation_step,step=rotate round=2 t=24.55
+2026-10-13T20:58:51.170Z,12.184,,DEV145838,3,novice,focus_lost,
+2026-10-13T20:58:58.806Z,19.812,,DEV145838,3,novice,focus_back,
+2026-10-13T20:58:58.834Z,19.840,,DEV145838,3,novice,orientation_end,rounds=2 steps=6 t=123.86
+2026-10-13T20:59:00.546Z,21.550,0.000,DEV145838,3,novice,lesson_start,clip=Placeholder Narration duration=900.0
+2026-10-13T20:59:00.610Z,21.614,0.600,DEV145838,3,novice,segment_start,segment=superposition scheduled=0.000
+2026-10-13T20:59:15.012Z,36.003,150.600,DEV145838,3,novice,pause_onset,pause=1 task=pause1 scheduled=150.000
+2026-10-13T20:59:17.155Z,38.145,172.200,DEV145838,3,novice,prediction_response,pause=1 answer=50 rt=22.200
+2026-10-13T20:59:17.574Z,38.564,176.400,DEV145838,3,novice,gate_press,pause=1
+2026-10-13T20:59:17.777Z,38.766,178.200,DEV145838,3,novice,grab_start,pause=1 mode=sim angle=0.0
+2026-10-13T20:59:18.555Z,39.544,185.400,DEV145838,3,novice,grab_end,pause=1 angle=39.6 target=90.0 complete=0 forced=1
+2026-10-13T20:59:18.561Z,39.550,185.400,DEV145838,3,novice,rotation_timeout,pause=1 gate_pressed=1 remaining=50.4
+2026-10-13T20:59:18.838Z,39.827,187.800,DEV145838,3,novice,feedback_shown,pause=1 type=correct id=correct
+2026-10-13T20:59:21.082Z,42.069,210.600,DEV145838,3,novice,pause_offset,pause=1 scheduled=210.000
+2026-10-13T20:59:21.096Z,42.083,210.600,DEV145838,3,novice,segment_start,segment=bloch_sphere scheduled=210.000
+2026-10-13T20:59:30.037Z,51.019,303.600,DEV145838,3,novice,break_start,step=lesson input=key_b
+2026-10-13T20:59:31.572Z,52.552,303.600,DEV145838,3,novice,frame_rate,fps=11.5 worst_ms=7700.7 missed=686 frames=693 display_hz=60
+2026-10-13T20:59:35.182Z,56.160,303.600,DEV145838,3,novice,break_end,duration=5.14 ended_by=dev step=lesson
+2026-10-13T20:59:43.420Z,64.395,390.000,DEV145838,3,novice,pause_onset,pause=2 task=pause2 scheduled=390.000
+2026-10-13T20:59:45.992Z,66.965,415.200,DEV145838,3,novice,prediction_timeout,pause=2
+2026-10-13T20:59:46.493Z,67.466,420.000,DEV145838,3,novice,gate_press,pause=2
+2026-10-13T20:59:46.635Z,67.608,421.200,DEV145838,3,novice,grab_start,pause=2 mode=sim angle=0.0
+2026-10-13T20:59:46.974Z,67.947,424.200,DEV145838,3,novice,grab_end,pause=2 angle=90.0 target=90.0 complete=1
+2026-10-13T20:59:46.979Z,67.952,424.200,DEV145838,3,novice,rotation_complete,pause=2 by=learner
+2026-10-13T20:59:47.131Z,68.104,425.400,DEV145838,3,novice,feedback_shown,pause=2 type=no_prediction id=no_prediction
+2026-10-13T20:59:49.587Z,70.559,450.000,DEV145838,3,novice,pause_offset,pause=2 scheduled=450.000
+2026-10-13T20:59:49.591Z,70.563,450.000,DEV145838,3,novice,segment_start,segment=gates scheduled=450.000
+2026-10-13T21:00:06.952Z,87.919,630.000,DEV145838,3,novice,pause_onset,pause=3 task=pause3 scheduled=630.000
+2026-10-13T21:00:07.711Z,88.678,637.200,DEV145838,3,novice,prediction_response,pause=3 answer=+ rt=7.200
+2026-10-13T21:00:08.038Z,89.004,640.200,DEV145838,3,novice,gate_press,pause=3
+2026-10-13T21:00:08.178Z,89.145,641.400,DEV145838,3,novice,grab_start,pause=3 mode=sim angle=0.0
+2026-10-13T21:00:08.991Z,89.958,649.200,DEV145838,3,novice,grab_end,pause=3 angle=180.0 target=180.0 complete=1
+2026-10-13T21:00:08.994Z,89.960,649.200,DEV145838,3,novice,rotation_complete,pause=3 by=learner
+2026-10-13T21:00:09.142Z,90.108,650.400,DEV145838,3,novice,feedback_shown,pause=3 type=misconception id=h_always_creates_superposition
+2026-10-13T21:00:12.991Z,93.956,690.000,DEV145838,3,novice,pause_offset,pause=3 scheduled=690.000
+2026-10-13T21:00:12.997Z,93.962,690.000,DEV145838,3,novice,segment_start,segment=measurement scheduled=690.000
+2026-10-13T21:00:27.437Z,108.400,840.000,DEV145838,3,novice,pause_onset,pause=4 task=pause4 scheduled=840.000
+2026-10-13T21:00:27.983Z,108.945,845.400,DEV145838,3,novice,prediction_response,pause=4 answer=75 rt=5.400
+2026-10-13T21:00:28.300Z,109.263,848.400,DEV145838,3,novice,gate_press,pause=4
+2026-10-13T21:00:28.369Z,109.332,849.000,DEV145838,3,novice,grab_start,pause=4 mode=sim angle=0.0
+2026-10-13T21:00:28.635Z,109.598,851.400,DEV145838,3,novice,grab_end,pause=4 angle=60.0 target=60.0 complete=1
+2026-10-13T21:00:28.641Z,109.603,851.400,DEV145838,3,novice,rotation_complete,pause=4 by=learner
+2026-10-13T21:00:31.366Z,112.329,880.200,DEV145838,3,novice,measurement_demo,pause=4 shots=100 seed=57
+2026-10-13T21:00:31.660Z,112.622,882.600,DEV145838,3,novice,frame_rate,fps=17.0 worst_ms=93.1 missed=1023 frames=1023 display_hz=60
+2026-10-13T21:00:32.593Z,113.555,891.000,DEV145838,3,novice,feedback_shown,pause=4 type=correct id=correct
+2026-10-13T21:00:33.503Z,114.465,900.000,DEV145838,3,novice,pause_offset,pause=4 scheduled=900.000
+2026-10-13T21:00:33.509Z,114.471,900.000,DEV145838,3,novice,lesson_end,max_late_ms=600.0
+2026-10-13T21:00:33.513Z,114.475,,DEV145838,3,novice,session_end,status=completed events=64

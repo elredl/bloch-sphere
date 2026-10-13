@@ -115,3 +115,6 @@ InitTestScene*.unity*
 
 # Live-edit command queue (runtime working files, not project content)
 /LiveCommands/
+
+# Editor dry-run session data (StudySession.DataDirectory in the Editor)
+/DevData/

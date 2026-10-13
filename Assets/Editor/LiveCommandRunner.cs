@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditor.TestTools.TestRunner.Api;
 using UnityEngine;
 
 // Watches LiveCommands/inbox for JSON command files and applies them
@@ -14,12 +15,51 @@ public static class LiveCommandRunner
     static readonly string ProjectRoot = Directory.GetParent(Application.dataPath).FullName;
     static readonly string InboxDir = Path.Combine(ProjectRoot, "LiveCommands", "inbox");
     static readonly string ProcessedDir = Path.Combine(ProjectRoot, "LiveCommands", "processed");
+    // Mirror of the Console, so an outside tool can read logs without the Editor UI.
+    static readonly string ConsoleLogPath = Path.Combine(ProjectRoot, "LiveCommands", "console.log");
+    static readonly string TestResultsPath = Path.Combine(ProjectRoot, "LiveCommands", "test-results.txt");
 
     static LiveCommandRunner()
     {
         Directory.CreateDirectory(InboxDir);
         Directory.CreateDirectory(ProcessedDir);
         EditorApplication.update += Tick;
+        Application.logMessageReceivedThreaded += MirrorLog;
+    }
+
+    static readonly object ConsoleLock = new object();
+
+    static void MirrorLog(string message, string stackTrace, LogType type)
+    {
+        lock (ConsoleLock)
+        {
+            string trace = type == LogType.Log ? "" : "\n" + stackTrace;
+            File.AppendAllText(ConsoleLogPath, $"[{DateTime.Now:HH:mm:ss.fff}] [{type}] {message}{trace}\n");
+        }
+    }
+
+    // Writes a plain-text summary of an Edit Mode test run to LiveCommands/test-results.txt.
+    class TestResultWriter : ICallbacks
+    {
+        readonly System.Text.StringBuilder lines = new System.Text.StringBuilder();
+
+        public void RunStarted(ITestAdaptor testsToRun) { }
+        public void TestStarted(ITestAdaptor test) { }
+
+        public void TestFinished(ITestResultAdaptor result)
+        {
+            if (result.HasChildren) return;
+            lines.AppendLine($"{result.TestStatus,-8} {result.Test.FullName}");
+            if (result.TestStatus == TestStatus.Failed)
+                lines.AppendLine("         " + result.Message?.Replace("\n", "\n         "));
+        }
+
+        public void RunFinished(ITestResultAdaptor result)
+        {
+            string summary = $"passed={result.PassCount} failed={result.FailCount} skipped={result.SkipCount} " +
+                             $"inconclusive={result.InconclusiveCount} duration={result.Duration:F2}s\n";
+            File.WriteAllText(TestResultsPath, summary + lines);
+        }
     }
 
     static void Tick()
@@ -79,6 +119,11 @@ public static class LiveCommandRunner
         public string refObjectName; // for set_field_transform
         public float floatValue;     // for set_field_float
         public bool boolValue;       // for set_play_mode
+        public string typeName;      // for call_static
+        public string methodName;    // for call_static
+        public string arg;           // for call_static (optional single string argument)
+        public int width = 1920;     // for capture_camera
+        public int height = 1080;    // for capture_camera
     }
 
     static Type FindComponentType(string typeName)
@@ -137,9 +182,16 @@ public static class LiveCommandRunner
         renderer.sharedMaterial = mat;
     }
 
+    // Actions that must not run while scripts compile or assets import: queuing Play Mode
+    // behind a stuck compile froze the Editor once (Checkpoint 3). Refuse instead.
+    static readonly string[] NeedsIdleEditor = { "set_play_mode", "call_static", "save_scene", "open_scene", "run_tests", "instantiate_prefab" };
+
     static string Execute(Command cmd)
     {
         var scene = EditorSceneManager.GetActiveScene();
+        bool busy = EditorApplication.isCompiling || EditorApplication.isUpdating;
+        if (busy && Array.IndexOf(NeedsIdleEditor, cmd.action) >= 0)
+            throw new Exception($"Editor busy (compiling={EditorApplication.isCompiling}, importing={EditorApplication.isUpdating}); '{cmd.action}' refused");
 
         switch (cmd.action)
         {
@@ -314,6 +366,85 @@ public static class LiveCommandRunner
             {
                 var names = scene.GetRootGameObjects().Select(g => g.name);
                 return string.Join(", ", names);
+            }
+            case "refresh":
+            {
+                AssetDatabase.Refresh();
+                return "asset database refreshed";
+            }
+            case "reimport":
+            {
+                // For files a background refresh missed (e.g. written mid-refresh).
+                AssetDatabase.ImportAsset(cmd.path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ImportRecursive);
+                return $"reimported {cmd.path}";
+            }
+            case "recompile":
+            {
+                UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation(
+                    UnityEditor.Compilation.RequestScriptCompilationOptions.CleanBuildCache);
+                return "script compilation requested (clean)";
+            }
+            case "run_tests":
+            {
+                // Async: results land in LiveCommands/test-results.txt when the run finishes.
+                if (File.Exists(TestResultsPath)) File.Delete(TestResultsPath);
+                var api = ScriptableObject.CreateInstance<TestRunnerApi>();
+                api.RegisterCallbacks(new TestResultWriter());
+                var filter = new Filter { testMode = TestMode.EditMode };
+                if (!string.IsNullOrEmpty(cmd.name)) filter.assemblyNames = new[] { cmd.name };
+                api.Execute(new ExecutionSettings(filter));
+                return "edit mode test run started";
+            }
+            case "capture_camera":
+            {
+                // Renders one camera offscreen, so it works in Edit and Play Mode and without the Game view focused.
+                var cam = string.IsNullOrEmpty(cmd.name) ? Camera.main
+                    : GameObject.Find(cmd.name)?.GetComponent<Camera>();
+                if (cam == null) throw new Exception($"Camera '{cmd.name}' not found");
+                var rt = new RenderTexture(cmd.width, cmd.height, 24) { antiAliasing = 4 };
+                var previousTarget = cam.targetTexture;
+                cam.targetTexture = rt;
+                cam.Render();
+                cam.targetTexture = previousTarget;
+                var previousActive = RenderTexture.active;
+                RenderTexture.active = rt;
+                var tex = new Texture2D(cmd.width, cmd.height, TextureFormat.RGB24, false);
+                tex.ReadPixels(new Rect(0, 0, cmd.width, cmd.height), 0, 0);
+                tex.Apply();
+                RenderTexture.active = previousActive;
+                string outPath = Path.IsPathRooted(cmd.path) ? cmd.path : Path.Combine(ProjectRoot, cmd.path);
+                Directory.CreateDirectory(Path.GetDirectoryName(outPath));
+                File.WriteAllBytes(outPath, tex.EncodeToPNG());
+                UnityEngine.Object.DestroyImmediate(tex);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                return $"captured {cam.name} to {outPath}";
+            }
+            case "call_static":
+            {
+                // Lets scene/asset setup live in readable editor scripts instead of long command chains.
+                Type type = null;
+                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    type = asm.GetType(cmd.typeName);
+                    if (type != null) break;
+                }
+                if (type == null) throw new Exception($"Type '{cmd.typeName}' not found");
+                var method = type.GetMethod(cmd.methodName,
+                    System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                    ?? throw new Exception($"Static method '{cmd.methodName}' not found on {cmd.typeName}");
+                object[] args = method.GetParameters().Length == 0 ? null : new object[] { cmd.arg };
+                object ret = method.Invoke(null, args);
+                return ret == null ? $"called {cmd.typeName}.{cmd.methodName}" : ret.ToString();
+            }
+            case "execute_menu":
+            {
+                if (!EditorApplication.ExecuteMenuItem(cmd.path)) throw new Exception($"Menu item '{cmd.path}' failed");
+                return $"executed menu {cmd.path}";
+            }
+            case "is_playing":
+            {
+                return $"isPlaying={EditorApplication.isPlaying} isCompiling={EditorApplication.isCompiling} isUpdating={EditorApplication.isUpdating}";
             }
             default:
                 throw new Exception($"Unknown action '{cmd.action}'");

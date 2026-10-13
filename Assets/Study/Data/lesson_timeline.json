@@ -1,0 +1,70 @@
+{
+    "lessonDuration": 900.0,
+    "reprepareDuration": 0.6,
+
+    "pauseSchedule": {
+        "pauseLength": 60.0,
+        "scriptedArcStart": 15.0,
+        "arcDuration": 3.0,
+        "predictionDeadline": 25.0,
+        "rotationDeadline": 35.0,
+        "timeoutArcMaxDuration": 3.0,
+        "measurementDemoStart": 40.0,
+        "measurementDemoEnd": 51.0
+    },
+
+    "segments": [
+        { "id": "superposition",   "start": 0.0,   "pauseStart": 150.0, "pauseEnd": 210.0, "task": "pause1" },
+        { "id": "bloch_sphere",    "start": 210.0, "pauseStart": 390.0, "pauseEnd": 450.0, "task": "pause2" },
+        { "id": "gates",           "start": 450.0, "pauseStart": 630.0, "pauseEnd": 690.0, "task": "pause3" },
+        { "id": "measurement",     "start": 690.0, "pauseStart": 840.0, "pauseEnd": 900.0, "task": "pause4" }
+    ],
+
+    "events": [
+        { "t": 1.0,   "type": "set_state",  "state": "0" },
+
+        { "t": 215.0, "type": "show",       "target": "angle_arcs" },
+        { "t": 300.0, "type": "apply_gate", "gate": "Rz(180)", "duration": 3.0 },
+        { "t": 340.0, "type": "apply_gate", "gate": "Rz(180)", "duration": 3.0 },
+        { "t": 380.0, "type": "hide",       "target": "angle_arcs" },
+
+        { "t": 452.0, "type": "set_state",  "state": "0" },
+        { "t": 480.0, "type": "apply_gate", "gate": "X", "duration": 3.0 },
+        { "t": 520.0, "type": "set_state",  "state": "+" },
+        { "t": 530.0, "type": "apply_gate", "gate": "Z", "duration": 3.0 },
+        { "t": 580.0, "type": "set_state",  "state": "0" },
+        { "t": 590.0, "type": "apply_gate", "gate": "H", "duration": 3.0 },
+
+        { "t": 720.0, "type": "apply_gate", "gate": "H", "duration": 3.0 },
+        { "t": 760.0, "type": "measure_demo", "state": "+", "shots": 100, "seed": 27 },
+        { "t": 820.0, "type": "hide",       "target": "measurement_panel" },
+        { "t": 830.0, "type": "set_state",  "state": "0" }
+    ],
+
+    "pauseTasks": [
+        {
+            "id": "pause1", "startState": "0", "gate": "Ry(90)",
+            "operationLabel": "Quarter turn toward |1⟩",
+            "prediction": "p0", "choices": ["100", "75", "50", "25", "0"], "correct": "50",
+            "measurementDemo": false, "demoShots": 0, "demoSeed": 0
+        },
+        {
+            "id": "pause2", "startState": "+", "gate": "Rz(90)",
+            "operationLabel": "Quarter turn about z",
+            "prediction": "position", "choices": ["0", "1", "+", "-", "+i", "-i"], "correct": "+i",
+            "measurementDemo": false, "demoShots": 0, "demoSeed": 0
+        },
+        {
+            "id": "pause3", "startState": "+", "gate": "H",
+            "operationLabel": "H",
+            "prediction": "position", "choices": ["0", "1", "+", "-", "+i", "-i"], "correct": "0",
+            "measurementDemo": false, "demoShots": 0, "demoSeed": 0
+        },
+        {
+            "id": "pause4", "startState": "0", "gate": "Ry(60)",
+            "operationLabel": "60° turn toward |1⟩",
+            "prediction": "p0", "choices": ["100", "75", "67", "50", "25"], "correct": "75",
+            "measurementDemo": true, "demoShots": 100, "demoSeed": 57
+        }
+    ]
+}

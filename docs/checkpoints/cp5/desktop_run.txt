@@ -1,0 +1,55 @@
+Checkpoint 5: Condition 1 Linux desktop player (Builds/Desktop/lesson_c1), full lesson at 1x real time,
+launched -dev-windowed -dev-mute (960x540 window). Pacing follows the narration audio clock.
+
+This machine rendered with Mesa llvmpipe (software, glxinfo: Accelerated: no), so the frame rate
+below (~33 fps) is this laptop's, not the study desktop's. The pacing is unaffected (audio clock).
+
+Renderer: llvmpipe (LLVM 20.1.2, 256 bits)
+[View] C1: desktop camera
+[Display] C1 window 960x540 Windowed, monitor 1920x1080 @ 60.00 Hz, vSync=1 (dev windowed)
+
+[Pacing] C1 segment superposition start  scheduled=0.000 fired=0.030 audio=0.021 late=29.9ms
+[Pacing] C1 event set_state 0            scheduled=1.000 fired=1.018 audio=1.024 late=17.9ms
+[Pacing] C1 pause1 onset                 scheduled=150.000 fired=150.009 audio=150.016 late=9.0ms
+[Pacing] C1 pause1 scripted arc          scheduled=165.000 fired=165.026 audio=165.035 late=25.9ms
+[Pacing] C1 pause1 offset                scheduled=210.000 fired=210.027 audio=210.027 late=27.1ms
+[Pacing] C1 segment bloch_sphere start   scheduled=210.000 fired=210.027 audio=210.027 late=27.1ms
+[Pacing] C1 event show angle_arcs        scheduled=215.000 fired=215.006 audio=214.997 late=6.3ms
+[Pacing] C1 event apply_gate Rz(180)     scheduled=300.000 fired=300.010 audio=300.011 late=9.7ms
+[Pacing] C1 event apply_gate Rz(180)     scheduled=340.000 fired=340.022 audio=340.032 late=22.4ms
+[Pacing] C1 event hide angle_arcs        scheduled=380.000 fired=380.029 audio=380.032 late=29.4ms
+[Pacing] C1 pause2 onset                 scheduled=390.000 fired=390.011 audio=390.016 late=11.0ms
+[Pacing] C1 pause2 scripted arc          scheduled=405.000 fired=405.012 audio=405.013 late=11.6ms
+[Pacing] C1 pause2 offset                scheduled=450.000 fired=450.007 audio=450.005 late=6.5ms
+[Pacing] C1 segment gates start          scheduled=450.000 fired=450.007 audio=450.005 late=6.5ms
+[Pacing] C1 event set_state 0            scheduled=452.000 fired=452.011 audio=452.011 late=11.5ms
+[Pacing] C1 event apply_gate X           scheduled=480.000 fired=480.025 audio=480.021 late=25.5ms
+[Pacing] C1 event set_state +            scheduled=520.000 fired=520.005 audio=520.000 late=5.4ms
+[Pacing] C1 event apply_gate Z           scheduled=530.000 fired=530.020 audio=530.027 late=20.3ms
+[Pacing] C1 event set_state 0            scheduled=580.000 fired=580.028 audio=580.032 late=28.5ms
+[Pacing] C1 event apply_gate H           scheduled=590.000 fired=590.028 audio=590.037 late=27.9ms
+[Pacing] C1 pause3 onset                 scheduled=630.000 fired=630.007 audio=630.016 late=6.7ms
+[Pacing] C1 pause3 scripted arc          scheduled=645.000 fired=645.007 audio=645.013 late=7.1ms
+[Pacing] C1 pause3 offset                scheduled=690.000 fired=690.021 audio=690.027 late=20.7ms
+[Pacing] C1 segment measurement start    scheduled=690.000 fired=690.021 audio=690.027 late=20.7ms
+[Pacing] C1 event apply_gate H           scheduled=720.000 fired=720.005 audio=720.000 late=5.4ms
+[Pacing] C1 event measure_demo +         scheduled=760.000 fired=760.022 audio=760.021 late=22.4ms
+[Pacing] C1 event hide measurement_panel scheduled=820.000 fired=820.024 audio=820.032 late=23.9ms
+[Pacing] C1 event set_state 0            scheduled=830.000 fired=830.007 audio=830.016 late=7.4ms
+[Pacing] C1 pause4 onset                 scheduled=840.000 fired=840.018 audio=840.021 late=18.4ms
+[Pacing] C1 pause4 scripted arc          scheduled=855.000 fired=855.006 audio=854.997 late=6.1ms
+[Pacing] C1 pause4 measurement demo      scheduled=880.000 fired=880.006 audio=880.000 late=5.6ms
+[Pacing] C1 pause4 offset                scheduled=900.000 fired=900.000 audio=900.000 late=0.0ms
+[Pacing] C1 lesson end                   scheduled=900.000 fired=900.000 audio=900.000 late=0.0ms
+[Pacing] C1 SUMMARY lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=29.9ms real=900.0s at 1x
+
+Frame stats (every 10 s):
+[Frames] t=10s fps=19.3 worst=3037.3ms missed=192/193 display=60Hz
+[Frames] t=20s fps=31.4 worst=43.2ms missed=315/315 display=60Hz
+[Frames] t=30s fps=31.3 worst=53.6ms missed=314/314 display=60Hz
+[Frames] t=40s fps=33.2 worst=43.7ms missed=333/333 display=60Hz
+[Frames] t=50s fps=33.4 worst=34.9ms missed=335/335 display=60Hz
+...
+
+Editor C1 run at 18x after disabling desktop XR: 0 exceptions (the UnityOpenXR DllNotFoundException is gone).
+[Pacing] C1 SUMMARY lessonTime=900.000 scheduledTotal=900.000 pauses=[150.000-210.000] [390.000-450.000] [630.000-690.000] [840.000-900.000] maxLateness=600.0ms real=52.7s at 18x

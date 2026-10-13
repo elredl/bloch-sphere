@@ -3,6 +3,7 @@
 
 The script text lives here (LINES), so every edit is re-checked: run from the project root
     python3 tools/narration_script.py
+It also writes docs/narration_prompter.html, a page that keeps time while you record.
 It fails if a line runs into a pause (the pauses must be silent in the recording), overlaps
 another line, or needs more than MAX_RATE words per second, and writes docs/NARRATION_SCRIPT.md.
 
@@ -18,6 +19,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TIMELINE = json.loads((ROOT / "Assets/Study/Data/lesson_timeline.json").read_text(encoding="utf-8"))
 OUT = ROOT / "docs/NARRATION_SCRIPT.md"
+PROMPTER = ROOT / "docs/narration_prompter.html"
 MAX_RATE = 2.3   # words per second (about 140 a minute); the draft stays under 2.0
 
 # (start s, end s, what is on screen, text). Times are lesson time in the recording.
@@ -154,10 +156,119 @@ def render():
     OUT.write_text("\n".join(out), encoding="utf-8")
 
 
+def render_prompter():
+    """A self-contained page that keeps time while you record: open it in a browser."""
+    data = {
+        "duration": TIMELINE["lessonDuration"],
+        "lines": [{"start": a, "end": b, "screen": c, "text": t} for a, b, c, t in LINES],
+        "pauses": [{"start": s["pauseStart"], "end": s["pauseEnd"], "n": i + 1} for i, s in enumerate(TIMELINE["segments"])],
+        "segments": [{"start": s["start"], "title": SEGMENT_TITLES.get(s["id"], s["id"])} for s in TIMELINE["segments"]],
+    }
+    html = PROMPTER_TEMPLATE.replace("__DATA__", json.dumps(data, ensure_ascii=False))
+    PROMPTER.write_text(html, encoding="utf-8")
+
+
+PROMPTER_TEMPLATE = r"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Narration prompter</title>
+<style>
+  body { margin: 0; background: #05060a; color: #e8ecf2; font: 18px/1.4 system-ui, sans-serif; }
+  #top { display: flex; gap: 24px; align-items: baseline; padding: 16px 28px; border-bottom: 1px solid #1c2230; }
+  #clock { font: 600 44px ui-monospace, monospace; color: #00f0ff; min-width: 6.5ch; }
+  #segment { color: #8a93a6; flex: 1; }
+  #state { font-weight: 600; letter-spacing: .08em; }
+  .speak { color: #7dff9a; } .wait { color: #ffe14d; } .silent { color: #ff6b6b; }
+  main { padding: 28px; max-width: 1100px; }
+  #now { font-size: 38px; line-height: 1.35; min-height: 5.4em; }
+  #now.waiting { color: #6b7385; }
+  #bar { height: 10px; background: #1c2230; border-radius: 5px; overflow: hidden; margin: 18px 0 6px; }
+  #fill { height: 100%; width: 0; background: #00f0ff; }
+  #barText { color: #8a93a6; font-size: 15px; }
+  #screen { color: #ff9e1b; margin-top: 18px; min-height: 1.4em; }
+  #next { color: #6b7385; font-size: 22px; margin-top: 26px; border-top: 1px solid #1c2230; padding-top: 14px; }
+  #controls { padding: 0 28px 28px; color: #8a93a6; font-size: 15px; }
+  button { background: #0d1220; color: #e8ecf2; border: 1px solid #00f0ff66; border-radius: 4px; padding: 6px 12px; margin: 0 6px 6px 0; font-size: 15px; cursor: pointer; }
+  #big { font: 600 120px ui-monospace, monospace; color: #ffe14d; text-align: center; padding-top: 30px; }
+</style></head><body>
+<div id="top"><div id="clock">0:00.0</div><div id="segment"></div><div id="state"></div></div>
+<main>
+  <div id="big"></div>
+  <div id="now" class="waiting">Start your recording, then press Space. A 3-second count-in comes first; the lesson clock starts at 0:00.0 after it.</div>
+  <div id="bar"><div id="fill"></div></div><div id="barText"></div>
+  <div id="screen"></div>
+  <div id="next"></div>
+</main>
+<div id="controls">
+  <div>Space: start / pause &nbsp; R: back to the start &nbsp; Starting at a segment: the clock shows lesson time, so you can line the take up later. Any time: add #t=seconds to the address, e.g. #t=480.</div>
+  <div id="jumps"></div>
+</div>
+<script>
+const D = __DATA__;
+const $ = id => document.getElementById(id);
+let running = false, countIn = 0, offset = 0, startedAt = 0, from = 0;
+const clock = s => { const m = Math.floor(s / 60), r = s - m * 60; return m + ":" + (r < 10 ? "0" : "") + r.toFixed(1); };
+function now() { return running ? from + (performance.now() - startedAt) / 1000 : from; }
+function start() {
+  if (running || countIn) return;
+  countIn = 3; $("big").textContent = countIn; $("now").textContent = ""; $("next").textContent = "";
+  const tick = setInterval(() => {
+    countIn--;
+    if (countIn > 0) { $("big").textContent = countIn; return; }
+    clearInterval(tick); $("big").textContent = ""; running = true; startedAt = performance.now();
+  }, 1000);
+}
+function pause() { if (!running) return; from = now(); running = false; }
+function jump(t) { running = false; countIn = 0; from = t; $("big").textContent = ""; draw(); }
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") { e.preventDefault(); running ? pause() : start(); }
+  if (e.key === "r" || e.key === "R") jump(0);
+});
+D.segments.forEach((s, i) => {
+  const b = document.createElement("button"); b.textContent = (i + 1) + ". " + s.title + " (" + clock(s.start) + ")";
+  b.onclick = () => jump(s.start); $("jumps").appendChild(b);
+});
+function draw() {
+  const t = Math.min(now(), D.duration);
+  $("clock").textContent = clock(t);
+  const seg = [...D.segments].reverse().find(s => t >= s.start);
+  $("segment").textContent = seg ? seg.title : "";
+  const pause = D.pauses.find(p => t >= p.start && t < p.end);
+  const line = D.lines.find(l => t >= l.start && t < l.end);
+  const upcoming = D.lines.find(l => l.start > t);
+  let state = "", cls = "", text = "", frac = 0, barText = "", screen = "";
+  if (t >= D.duration) { state = "END"; cls = "silent"; text = "End of the lesson (15:00.0). Stop the recording."; }
+  else if (pause) {
+    state = "SILENCE"; cls = "silent"; frac = (t - pause.start) / (pause.end - pause.start);
+    text = "Pause " + pause.n + ": silence."; barText = (pause.end - t).toFixed(0) + " s of silence left";
+  } else if (line) {
+    state = "SPEAK"; cls = "speak"; text = line.text; screen = line.screen;
+    frac = (t - line.start) / (line.end - line.start); barText = (line.end - t).toFixed(1) + " s left for this line";
+  } else if (upcoming) {
+    state = "WAIT"; cls = "wait"; text = upcoming.text; screen = upcoming.screen;
+    barText = "starts in " + (upcoming.start - t).toFixed(1) + " s";
+  }
+  $("state").textContent = state; $("state").className = cls;
+  $("now").textContent = countIn ? "" : text; $("now").className = state === "WAIT" ? "waiting" : "";
+  $("fill").style.width = (frac * 100).toFixed(1) + "%";
+  $("fill").style.background = state === "SILENCE" ? "#ff6b6b" : "#00f0ff";
+  $("barText").textContent = countIn ? "" : barText;
+  $("screen").textContent = screen ? "On screen: " + screen : "";
+  const after = line ? D.lines.find(l => l.start >= line.end) : (state === "WAIT" ? D.lines.find(l => l.start > upcoming.start) : upcoming);
+  const nextPause = D.pauses.find(p => p.start >= t);
+  let next = after ? "Next (" + clock(after.start) + "): " + after.text : "";
+  if (nextPause && after && nextPause.start < after.start) next = "Next: pause " + nextPause.n + " at " + clock(nextPause.start) + " (silence)";
+  $("next").textContent = countIn ? "" : next;
+}
+const hashT = /t=([0-9.]+)/.exec(location.hash); if (hashT) jump(parseFloat(hashT[1]));
+(function loop() { draw(); requestAnimationFrame(loop); })();
+</script></body></html>
+"""
+
+
 if __name__ == "__main__":
     problems = check()
     for p in problems:
         print("ERROR", p)
     render()
-    print(f"wrote {OUT.relative_to(ROOT)}; {len(problems)} timing errors")
+    render_prompter()
+    print(f"wrote {OUT.relative_to(ROOT)} and {PROMPTER.relative_to(ROOT)}; {len(problems)} timing errors")
     sys.exit(1 if problems else 0)

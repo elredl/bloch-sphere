@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Narration prompter</title>
+<style>
+  body { margin: 0; background: #05060a; color: #e8ecf2; font: 18px/1.4 system-ui, sans-serif; }
+  #top { display: flex; gap: 24px; align-items: baseline; padding: 16px 28px; border-bottom: 1px solid #1c2230; }
+  #clock { font: 600 44px ui-monospace, monospace; color: #00f0ff; min-width: 6.5ch; }
+  #segment { color: #8a93a6; flex: 1; }
+  #state { font-weight: 600; letter-spacing: .08em; }
+  .speak { color: #7dff9a; } .wait { color: #ffe14d; } .silent { color: #ff6b6b; }
+  main { padding: 28px; max-width: 1100px; }
+  #now { font-size: 38px; line-height: 1.35; min-height: 5.4em; }
+  #now.waiting { color: #6b7385; }
+  #bar { height: 10px; background: #1c2230; border-radius: 5px; overflow: hidden; margin: 18px 0 6px; }
+  #fill { height: 100%; width: 0; background: #00f0ff; }
+  #barText { color: #8a93a6; font-size: 15px; }
+  #screen { color: #ff9e1b; margin-top: 18px; min-height: 1.4em; }
+  #next { color: #6b7385; font-size: 22px; margin-top: 26px; border-top: 1px solid #1c2230; padding-top: 14px; }
+  #controls { padding: 0 28px 28px; color: #8a93a6; font-size: 15px; }
+  button { background: #0d1220; color: #e8ecf2; border: 1px solid #00f0ff66; border-radius: 4px; padding: 6px 12px; margin: 0 6px 6px 0; font-size: 15px; cursor: pointer; }
+  #big { font: 600 120px ui-monospace, monospace; color: #ffe14d; text-align: center; padding-top: 30px; }
+</style></head><body>
+<div id="top"><div id="clock">0:00.0</div><div id="segment"></div><div id="state"></div></div>
+<main>
+  <div id="big"></div>
+  <div id="now" class="waiting">Start your recording, then press Space. A 3-second count-in comes first; the lesson clock starts at 0:00.0 after it.</div>
+  <div id="bar"><div id="fill"></div></div><div id="barText"></div>
+  <div id="screen"></div>
+  <div id="next"></div>
+</main>
+<div id="controls">
+  <div>Space: start / pause &nbsp; R: back to the start &nbsp; Starting at a segment: the clock shows lesson time, so you can line the take up later. Any time: add #t=seconds to the address, e.g. #t=480.</div>
+  <div id="jumps"></div>
+</div>
+<script>
+const D = {"duration": 900.0, "lines": [{"start": 0, "end": 14, "screen": "|0⟩ (from 1 s)", "text": "Welcome. In the next fifteen minutes you will learn how a quantum bit, called a qubit, works. You do not need any background in physics or math."}, {"start": 14, "end": 40, "screen": "", "text": "An ordinary bit in a computer is always either zero or one. A qubit is different. Until it is measured, it can be in a combination of zero and one. This combination is called a superposition."}, {"start": 40, "end": 70, "screen": "", "text": "In front of you is a picture of one qubit. The glowing arrow shows its state. When the arrow points straight up, the qubit is in the state called ket zero, written with a bar and an angle bracket around the zero. When it points straight down, it is in the state ket one."}, {"start": 70, "end": 100, "screen": "", "text": "To find out what a qubit holds, we measure it. A measurement always gives one of just two answers: zero or one. If the arrow points straight up, a measurement gives zero every time. If it points straight down, it gives one every time."}, {"start": 100, "end": 132, "screen": "", "text": "When the arrow points somewhere in between, the qubit is in a superposition. Then a measurement can give either answer, and which one you get is a matter of chance. The closer the arrow is to the top, the more often you get zero. The closer it is to the bottom, the more often you get one."}, {"start": 132, "end": 150, "screen": "", "text": "After each part of this lesson, the narration stops for one minute. Right now the arrow points straight up, at ket zero. Next, it will get a quarter turn toward ket one."}, {"start": 210, "end": 243, "screen": "|+⟩; θ/φ arcs from 215", "text": "This picture is called the Bloch sphere. Every possible state of one qubit is a point on its surface, and the arrow always reaches from the center out to that point. The sphere has three axes. The z axis runs up and down, from ket zero at the top to ket one at the bottom."}, {"start": 243, "end": 270, "screen": "", "text": "The x and y axes lie flat, across the middle of the sphere, which we call the equator. Where they meet the surface are four more named states. Along x are ket plus and ket minus. Along y are ket plus i and ket minus i."}, {"start": 270, "end": 298, "screen": "", "text": "Two angles describe where the arrow points. The angle theta tells how far the arrow has tipped down from the top. The angle phi tells how far it has swung around the equator, starting from the x axis. Right now the arrow points along x, at ket plus."}, {"start": 298, "end": 302, "screen": "", "text": "Watch it turn."}, {"start": 302, "end": 336, "screen": "Rz(180) arc 300-303: |+⟩ → |−⟩", "text": "Every change to a qubit is a rotation of the arrow about an axis. That was a half turn about the z axis. The arrow swung around the equator, from ket plus to ket minus. Its height did not change, so theta stayed the same. Only phi changed."}, {"start": 336, "end": 340, "screen": "", "text": "Here is the same half turn again."}, {"start": 343, "end": 358, "screen": "Rz(180) arc 340-343: |−⟩ → |+⟩", "text": "The arrow is back at ket plus. Two half turns about the same axis make one full turn."}, {"start": 358, "end": 390, "screen": "θ/φ arcs hidden at 380", "text": "Every turn has a direction. Point the thumb of your right hand along the axis. Your fingers then curl the way the arrow turns. For the z axis, with your thumb pointing up, that is counterclockwise when seen from above. Next, the arrow at ket plus will get a quarter turn about the z axis."}, {"start": 450, "end": 478, "screen": "re-prepared to |0⟩ at 452", "text": "In quantum computing, the basic operations on a qubit are called gates. Each gate is a fixed rotation of the arrow. Here are three of them. The arrow has been set back to ket zero, at the top."}, {"start": 478, "end": 481, "screen": "", "text": "The X gate. Watch."}, {"start": 483, "end": 508, "screen": "X arc 480-483: |0⟩ → |1⟩", "text": "The X gate is a half turn about the x axis. It takes ket zero at the top to ket one at the bottom. It flips the qubit, like switching an ordinary bit between zero and one."}, {"start": 519, "end": 529, "screen": "re-prepared to |+⟩ at 520", "text": "Now the arrow is set to ket plus, on the equator. The second gate is the Z gate. Watch."}, {"start": 533, "end": 556, "screen": "Z arc 530-533: |+⟩ → |−⟩", "text": "The Z gate is a half turn about the z axis. It swings ket plus around the equator to ket minus. Like every turn about z, it changes phi and leaves the height alone."}, {"start": 556, "end": 576, "screen": "", "text": "The third gate is called H, after the mathematician Hadamard. H is a half turn about a tilted axis, halfway between the x axis and the z axis."}, {"start": 579, "end": 589, "screen": "re-prepared to |0⟩ at 580", "text": "The arrow is set back to ket zero. Now watch H."}, {"start": 593, "end": 630, "screen": "H arc 590-593: |0⟩ → |+⟩", "text": "H took ket zero at the top to ket plus on the equator. It turned a definite state into an equal superposition. Gates can be used one after another, and each one is just another turn of the same arrow. The arrow is now at ket plus. Next, H will be applied again."}, {"start": 690, "end": 718, "screen": "|0⟩", "text": "Now let us look more closely at measurement. A measurement gives zero or one, and it also changes the qubit. Right after the measurement, the arrow points straight at the answer you got: up for zero, down for one."}, {"start": 718, "end": 722, "screen": "", "text": "First, an H gate."}, {"start": 723, "end": 744, "screen": "H arc 720-723: |0⟩ → |+⟩", "text": "The arrow is now at ket plus, on the equator. Measuring it once tells us very little: we get a single zero or a single one."}, {"start": 744, "end": 760, "screen": "", "text": "So the same state is prepared again and again, and measured each time. The panel counts the results. Watch."}, {"start": 770, "end": 800, "screen": "measurement demo 760-769.5 (100 shots of |+⟩); panel until 820", "text": "Out of one hundred measurements, about half gave zero and half gave one. Each single result is chance, but over many measurements the counts follow the state."}, {"start": 800, "end": 826, "screen": "panel hidden at 820", "text": "The chance of zero depends on how high the tip of the arrow sits. At the top, every measurement gives zero. On the equator, it is half and half. In between, it follows the height of the tip, not the angle the arrow has turned."}, {"start": 826, "end": 840, "screen": "re-prepared to |0⟩ at 830", "text": "Next, the arrow will be set back to ket zero, get a sixty degree turn toward ket one, and then be measured one hundred times."}], "pauses": [{"start": 150.0, "end": 210.0, "n": 1}, {"start": 390.0, "end": 450.0, "n": 2}, {"start": 630.0, "end": 690.0, "n": 3}, {"start": 840.0, "end": 900.0, "n": 4}], "segments": [{"start": 0.0, "title": "Superposition"}, {"start": 210.0, "title": "The Bloch sphere"}, {"start": 450.0, "title": "Single-qubit gates"}, {"start": 690.0, "title": "Measurement"}]};
+const $ = id => document.getElementById(id);
+let running = false, countIn = 0, offset = 0, startedAt = 0, from = 0;
+const clock = s => { const m = Math.floor(s / 60), r = s - m * 60; return m + ":" + (r < 10 ? "0" : "") + r.toFixed(1); };
+function now() { return running ? from + (performance.now() - startedAt) / 1000 : from; }
+function start() {
+  if (running || countIn) return;
+  countIn = 3; $("big").textContent = countIn; $("now").textContent = ""; $("next").textContent = "";
+  const tick = setInterval(() => {
+    countIn--;
+    if (countIn > 0) { $("big").textContent = countIn; return; }
+    clearInterval(tick); $("big").textContent = ""; running = true; startedAt = performance.now();
+  }, 1000);
+}
+function pause() { if (!running) return; from = now(); running = false; }
+function jump(t) { running = false; countIn = 0; from = t; $("big").textContent = ""; draw(); }
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") { e.preventDefault(); running ? pause() : start(); }
+  if (e.key === "r" || e.key === "R") jump(0);
+});
+D.segments.forEach((s, i) => {
+  const b = document.createElement("button"); b.textContent = (i + 1) + ". " + s.title + " (" + clock(s.start) + ")";
+  b.onclick = () => jump(s.start); $("jumps").appendChild(b);
+});
+function draw() {
+  const t = Math.min(now(), D.duration);
+  $("clock").textContent = clock(t);
+  const seg = [...D.segments].reverse().find(s => t >= s.start);
+  $("segment").textContent = seg ? seg.title : "";
+  const pause = D.pauses.find(p => t >= p.start && t < p.end);
+  const line = D.lines.find(l => t >= l.start && t < l.end);
+  const upcoming = D.lines.find(l => l.start > t);
+  let state = "", cls = "", text = "", frac = 0, barText = "", screen = "";
+  if (t >= D.duration) { state = "END"; cls = "silent"; text = "End of the lesson (15:00.0). Stop the recording."; }
+  else if (pause) {
+    state = "SILENCE"; cls = "silent"; frac = (t - pause.start) / (pause.end - pause.start);
+    text = "Pause " + pause.n + ": silence."; barText = (pause.end - t).toFixed(0) + " s of silence left";
+  } else if (line) {
+    state = "SPEAK"; cls = "speak"; text = line.text; screen = line.screen;
+    frac = (t - line.start) / (line.end - line.start); barText = (line.end - t).toFixed(1) + " s left for this line";
+  } else if (upcoming) {
+    state = "WAIT"; cls = "wait"; text = upcoming.text; screen = upcoming.screen;
+    barText = "starts in " + (upcoming.start - t).toFixed(1) + " s";
+  }
+  $("state").textContent = state; $("state").className = cls;
+  $("now").textContent = countIn ? "" : text; $("now").className = state === "WAIT" ? "waiting" : "";
+  $("fill").style.width = (frac * 100).toFixed(1) + "%";
+  $("fill").style.background = state === "SILENCE" ? "#ff6b6b" : "#00f0ff";
+  $("barText").textContent = countIn ? "" : barText;
+  $("screen").textContent = screen ? "On screen: " + screen : "";
+  const after = line ? D.lines.find(l => l.start >= line.end) : (state === "WAIT" ? D.lines.find(l => l.start > upcoming.start) : upcoming);
+  const nextPause = D.pauses.find(p => p.start >= t);
+  let next = after ? "Next (" + clock(after.start) + "): " + after.text : "";
+  if (nextPause && after && nextPause.start < after.start) next = "Next: pause " + nextPause.n + " at " + clock(nextPause.start) + " (silence)";
+  $("next").textContent = countIn ? "" : next;
+}
+const hashT = /t=([0-9.]+)/.exec(location.hash); if (hashT) jump(parseFloat(hashT[1]));
+(function loop() { draw(); requestAnimationFrame(loop); })();
+</script></body></html>

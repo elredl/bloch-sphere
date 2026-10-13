@@ -57,7 +57,9 @@ Each segment ends in a **60 s** pause (four pauses, 4 min total). The narration
 is one audio file with the pauses built in as silences. Until it exists, a
 placeholder clip is used and everything is driven by a data-driven timeline
 (JSON) listing segment and pause times and the scripted events. Swapping in
-the real narration means replacing the clip and editing timestamps only.
+the real narration means replacing the clip and editing timestamps only. The draft
+script, timed against the timeline and checked by `tools/narration_script.py`, is
+`docs/NARRATION_SCRIPT.md`.
 
 Pause length tuning: run internal dry runs with labmates first. If more than
 about 1 in 5 Cond 3 attempts time out, lengthen all four pauses by the same

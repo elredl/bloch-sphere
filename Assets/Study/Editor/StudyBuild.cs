@@ -1,5 +1,4 @@
 using System.Linq;
-using Study.Lesson;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -11,31 +10,25 @@ using UnityEngine.Rendering.Universal;
 
 namespace Study.EditorTools
 {
-    // Player builds of the Lesson scene, one per condition, until Checkpoint 6's launch
-    // screen picks the condition per participant:
-    //   BuildApk("2" | "3")  Quest 3 APK          Builds/Quest/lesson_c{n}.apk
-    //   BuildDesktop("1")    Condition 1 desktop  Builds/Desktop/lesson_c1/lesson_c1.x86_64
-    // Each build bakes the condition into a temporary copy of the scene, so Lesson.unity on
-    // disk never changes. Post-processing is off on every camera (no bloom, Checkpoint 3).
+    // Player builds: the Launch scene (index 0; the experimenter enters the participant code
+    // and the condition comes from allocation.csv) and the Lesson scene.
+    //   BuildQuest()    Quest 3 APK, Conditions 2 and 3   Builds/Quest/lesson.apk
+    //   BuildDesktop()  Condition 1 desktop               Builds/Desktop/lesson/lesson.x86_64
+    // Post-processing must be off on every camera (no bloom, Checkpoint 3); the build checks.
     public static class StudyBuild
     {
-        const string ScenePath = "Assets/Study/Scenes/Lesson.unity";
-        const string TempScenePath = "Assets/Study/Scenes/Lesson_Build.unity";
+        static readonly string[] Scenes = { "Assets/Study/Scenes/Launch.unity", "Assets/Study/Scenes/Lesson.unity" };
         const string OpenXRLoader = "UnityEngine.XR.OpenXR.OpenXRLoader";
 
-        public static string BuildApk(string arg)
-        {
-            if (arg != "2" && arg != "3") throw new System.ArgumentException("arg must be the condition: 2 or 3");
-            return Build(int.Parse(arg), BuildTarget.Android, BuildTargetGroup.Android, $"Builds/Quest/lesson_c{arg}.apk");
-        }
+        public static string BuildQuest(string arg = null) =>
+            Build(BuildTarget.Android, BuildTargetGroup.Android, "Builds/Quest/lesson.apk");
 
         // Linux build (the only desktop player module installed). The same settings apply to a
         // Windows build once that module is added.
-        public static string BuildDesktop(string arg)
+        public static string BuildDesktop(string arg = null)
         {
-            if (arg != "1") throw new System.ArgumentException("the desktop build is Condition 1");
             ConfigureDesktopPlayer();
-            return Build(1, BuildTarget.StandaloneLinux64, BuildTargetGroup.Standalone, "Builds/Desktop/lesson_c1/lesson_c1.x86_64");
+            return Build(BuildTarget.StandaloneLinux64, BuildTargetGroup.Standalone, "Builds/Desktop/lesson/lesson.x86_64");
         }
 
         // Condition 1 never starts XR: no OpenXR loader on desktop and no XR start-up. This also
@@ -68,37 +61,28 @@ namespace Study.EditorTools
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
         }
 
-        static string Build(int condition, BuildTarget target, BuildTargetGroup group, string path)
+        static string Build(BuildTarget target, BuildTargetGroup group, string path)
         {
             if (EditorUserBuildSettings.activeBuildTarget != target)
                 EditorUserBuildSettings.SwitchActiveBuildTarget(group, target);
 
-            var scene = EditorSceneManager.OpenScene(ScenePath);
-            foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include))
-                cam.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing = false;
-            var lesson = new SerializedObject(Object.FindAnyObjectByType<LessonController>());
-            lesson.FindProperty("devCondition").enumValueIndex = condition - 1;
-            lesson.ApplyModifiedPropertiesWithoutUndo();
-            // A copy, so the build settings never reach Lesson.unity. Overwrites one left by a crashed build.
-            EditorSceneManager.SaveScene(scene, TempScenePath, true);
+            foreach (string scenePath in Scenes)
+            {
+                EditorSceneManager.OpenScene(scenePath);
+                foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include))
+                    if (cam.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing)
+                        return $"Failed: post-processing is on for {cam.name} in {scenePath}";
+            }
+            EditorSceneManager.OpenScene(Scenes[1]);
 
             var options = new BuildPlayerOptions
             {
-                scenes = new[] { TempScenePath },
+                scenes = Scenes,
                 locationPathName = path,
                 target = target,
                 options = BuildOptions.None,
             };
-            BuildReport report;
-            try
-            {
-                report = BuildPipeline.BuildPlayer(options);
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(TempScenePath);
-                EditorSceneManager.OpenScene(ScenePath);
-            }
+            BuildReport report = BuildPipeline.BuildPlayer(options);
 
             var s = report.summary;
             string errors = string.Join(" | ", report.steps.SelectMany(step => step.messages)

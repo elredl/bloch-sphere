@@ -74,7 +74,7 @@ namespace Study.Lesson
 
         void Update()
         {
-            if (pauseIndex < 0) return;
+            if (pauseIndex < 0 || lesson.OnBreak) return;
             LessonTimeline.PauseSchedule p = lesson.Timeline.pauseSchedule;
             double sincePause = lesson.Time - onset;
 
@@ -86,6 +86,7 @@ namespace Study.Lesson
             {
                 demoDone = true;
                 lesson.Record($"pause{pauseIndex + 1} measurement demo", onset + p.measurementDemoStart);
+                StudyEvents.Log(lesson.Time, "measurement_demo", $"pause={pauseIndex + 1} shots={task.demoShots} seed={task.demoSeed}");
                 // Demo on the state the pause operation produced (the same in every condition).
                 Qubit prepared = Gate.FromName(task.gate).Apply(Qubit.FromName(task.startState));
                 demo.Run(prepared, task.demoShots, task.demoSeed, onset + p.measurementDemoStart);

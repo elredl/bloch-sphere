@@ -5,7 +5,9 @@
         "Study.Quantum",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
-        "Unity.XR.Interaction.Toolkit"
+        "Unity.XR.Interaction.Toolkit",
+        "Unity.InputSystem",
+        "Unity.XR.CoreUtils"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Study.Lesson;
 using Study.Quantum;
+using Study.Session;
 using Study.Visuals;
 using TMPro;
 using UnityEditor;
@@ -20,13 +21,15 @@ namespace Study.EditorTools
         const string FontsFolder = "Assets/Study/Fonts";
         const string PalettePath = "Assets/Study/Data/StylePalette.asset";
         const string ScenePath = "Assets/Study/Scenes/Lesson.unity";
+        const string LaunchScenePath = "Assets/Study/Scenes/Launch.unity";
         const string TimelinePath = "Assets/Study/Data/lesson_timeline.json";
         const string FeedbackPath = "Assets/Study/Data/pause_feedback.json";
 
         // Seated participant: eye about 1.2 m above the floor. The sphere center sits
-        // 0.25 m below eye level and 0.8 m forward. Calibration (Checkpoint 6) moves
-        // the sphere to each participant's measured eye height; this is the default.
-        static readonly Vector3 DefaultEye = new Vector3(0f, 1.2f, 0f);
+        // 0.25 m below eye level and 0.8 m forward. Calibration (SessionFlow) moves the
+        // Stage, which holds the sphere and its panels, to each participant's measured
+        // eye height; this is the default.
+        static readonly Vector3 DefaultEye = new Vector3(0f, SessionFlow.DefaultEyeHeight, 0f);
         static readonly Vector3 SphereCenter = DefaultEye + new Vector3(0f, -0.25f, 0.8f);
         // Oblique textbook view: the sphere is turned so +x points toward the participant's
         // front-left instead of straight at them (where it would shrink to a dot).
@@ -38,7 +41,13 @@ namespace Study.EditorTools
             string fonts = EnsureFonts();
             EnsurePalette();
             BuildLessonScene();
-            return fonts + " | palette and Lesson scene built | " + LessonScenePieces.DisableHandTracking() +
+            BuildLaunchScene();
+            EditorBuildSettings.scenes = new[]
+            {
+                new EditorBuildSettingsScene(LaunchScenePath, true),
+                new EditorBuildSettingsScene(ScenePath, true),
+            };
+            return fonts + " | palette, Launch and Lesson scenes built | " + LessonScenePieces.DisableHandTracking() +
                    " | " + StudyBuild.DisableDesktopXr();
         }
 
@@ -129,7 +138,10 @@ namespace Study.EditorTools
             // destroy a palette loaded earlier and silently null every reference to it.
             var palette = AssetDatabase.LoadAssetAtPath<StylePalette>(PalettePath);
 
+            // Everything placed relative to the participant's eye: calibration moves this.
+            var stage = new GameObject("Stage");
             var sphere = new GameObject("Bloch Sphere");
+            sphere.transform.SetParent(stage.transform, false);
             sphere.transform.position = SphereCenter;
             sphere.transform.rotation = Quaternion.Euler(0f, SphereYawDegrees, 0f);
             var rig = sphere.AddComponent<BlochSphereRig>();
@@ -189,6 +201,7 @@ namespace Study.EditorTools
             Set(lesson, "flash", flash);
 
             var panel = LessonScenePieces.AddMeasurementPanel(palette, SphereCenter, DefaultEye);
+            panel.transform.SetParent(stage.transform, true);
             var demo = lessonObject.AddComponent<MeasurementDemo>();
             Set(demo, "lesson", lesson);
             Set(demo, "state", state);
@@ -205,6 +218,7 @@ namespace Study.EditorTools
 
             // Condition 3: prompt/feedback panel, markers, arrow and the grab (inactive in Cond 1/2).
             var predictionPanel = LessonScenePieces.AddPredictionPanel(palette, SphereCenter, DefaultEye);
+            predictionPanel.transform.SetParent(stage.transform, true);
             var embodied = lessonObject.AddComponent<EmbodiedPause>();
             var grab = LessonScenePieces.AddGrabTarget(sphere, lesson, state, embodied);
             Set(embodied, "lesson", lesson);
@@ -228,10 +242,59 @@ namespace Study.EditorTools
             SetArray(viewSo, "interactors", interactors);
             viewSo.ApplyModifiedProperties();
             lessonObject.AddComponent<FrameStats>(); // frame timing to the log, for the Quest frame-rate check
-            Set(lessonObject.AddComponent<DesktopDisplay>(), "lesson", lesson); // Condition 1 screen, vsync, cursor
+            Set(lessonObject.AddComponent<DesktopDisplay>(), "lesson", lesson); // Condition 1 screen, vsync
+
+            // Session: calibration, orientation, breaks, abort and the end screen (Checkpoint 6).
+            var sessionObject = new GameObject("Session");
+            var orientation = SessionScenePieces.AddOrientation(sessionObject, palette, stage.transform, SphereCenter, DefaultEye);
+            var overlay = SessionScenePieces.AddOverlay(palette);
+            var end = SessionScenePieces.AddEndScreen(sessionObject, palette);
+            SessionScenePieces.AddSessionFlow(sessionObject, lesson, director, embodied, stage.transform, sphere,
+                xrOrigin, interactors, orientation, overlay, end);
             styler.Apply(); // style the XR camera's background too
 
             EditorSceneManager.SaveScene(scene, ScenePath);
+        }
+
+        // The experimenter's launch screen: same environment and viewpoint switch as the lesson,
+        // no sphere. Build index 0, so every build starts here.
+        static void BuildLaunchScene()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<StylePalette>(PalettePath);
+
+            var focus = new GameObject("Floor Focus");
+            focus.transform.position = SphereCenter;
+            var cameraObject = new GameObject("Desktop Camera") { tag = "MainCamera" };
+            cameraObject.transform.position = DefaultEye;
+            cameraObject.transform.LookAt(SphereCenter);
+            var cam = cameraObject.AddComponent<Camera>();
+            cam.fieldOfView = 60f;
+            cam.nearClipPlane = 0.05f;
+            cam.farClipPlane = 50f;
+            cameraObject.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = false;
+            cameraObject.AddComponent<AudioListener>();
+
+            var environment = new GameObject("Environment");
+            var styler = environment.AddComponent<EnvironmentStyler>();
+            Set(styler, "palette", palette);
+            Set(styler, "fadeCenter", focus.transform);
+            styler.enabled = false;
+            styler.enabled = true;
+
+            LessonScenePieces.AddEventSystem();
+            var (xrOrigin, interactors) = LessonScenePieces.AddXrRig();
+            var setup = new GameObject("View");
+            var view = setup.AddComponent<ViewSetup>();
+            Set(view, "desktopCamera", cameraObject);
+            Set(view, "xrOrigin", xrOrigin);
+            var viewSo = new SerializedObject(view);
+            SetArray(viewSo, "interactors", interactors);
+            viewSo.ApplyModifiedProperties();
+            setup.AddComponent<DesktopDisplay>();
+            SessionScenePieces.AddLaunchScreen(palette);
+            styler.Apply();
+            EditorSceneManager.SaveScene(scene, LaunchScenePath);
         }
 
         // Adds the style-lock sample panel to the open scene, for previews only.

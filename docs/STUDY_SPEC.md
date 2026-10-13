@@ -302,8 +302,21 @@ appear as `[Event]` log lines: `prediction_response` (answer, rt from pause
 onset), `prediction_timeout`, `gate_press`, `grab_start` (mode),
 `grab_end` (angle, target, complete, forced on timeout), `rotation_complete`,
 `rotation_timeout` (gate_pressed, remaining degrees), `feedback_shown` (type:
-correct, misconception, generic_incorrect or no_prediction; id). Checkpoint 6
-writes them to the CSV.
+correct, misconception, generic_incorrect or no_prediction; id).
+
+Checkpoint 6 (`StudySession`, `SessionLog`): every `StudyEvents.Log` call goes to
+the session CSV, columns `utc,session_s,lesson_s,participant,condition,stratum,event,fields`
+(`lesson_s` blank outside the lesson; `fields` is `key=value key=value`). Rows are
+flushed to disk one by one; the file is created with CreateNew, so it is never
+overwritten. Session events: `session_start` (source allocation/manual, app and
+device), `calibration` (eye height, yaw corrected), `orientation_start`,
+`orientation_step` (select, press, rotate; round), `orientation_grab`,
+`orientation_incomplete`, `orientation_end`, `lesson_start`, `segment_start`,
+`pause_onset`, `pause_offset`, `pause_state_mismatch`, `measurement_demo`,
+`lesson_end`, `break_start` / `break_end` (duration), `hmd_removed` (reason
+app_paused, focus_lost or user_absent) / `hmd_resume` (duration),
+`focus_lost` / `focus_back` (desktop), `abort` (step, input), `withdrawal`
+(reason), `frame_rate` (every 60 s), `session_end` (status, events).
 
 ## Session flow and experimenter tools
 
@@ -336,11 +349,23 @@ writes them to the CSV.
   Only Linux desktop support is installed; a Windows build uses the same
   settings once that module is added. Dev launch flags `-dev-windowed` and
   `-dev-mute` exist for dry runs only.
+- Implementation (Checkpoint 6): `LaunchScreen` (Launch scene, build index 0),
+  `SessionFlow`, `Orientation`, `SessionInput`, `EndScreen` (Lesson scene).
+  Participant wording is in `Data/session_text.json`. Codes are typed as the
+  prefix P plus digits. The data folder holds `allocation.csv`, the session files
+  and `session_index.csv` (every session started on the device; `pull_data`
+  leaves it, so a code can't be reused later either). In the Editor the data
+  folder is `DevData/` in the project. Calibration on Quest: the experimenter holds
+  A (right controller) 1 s while the participant sits upright facing forward; then
+  "pull the trigger when ready" starts orientation. Orientation practises the
+  steps in lesson order (select, press, rotate). The cube turns 90 deg about a
+  vertical axis with the lesson's ratchet and tolerance.
 - Then the lesson, then an end screen telling the participant to remove the
   headset (or look away from the monitor) and see the experimenter. The
   experimenter end screen shows the data file name and event count.
 - Data: `persistentDataPath`, file name like `P07_C3_20261020-1432.csv`, never
-  overwritten. A `pull_data` script (sh and ps1) runs `adb pull`, verifies the
+  overwritten. `tools/push_allocation.sh|ps1` copies allocation.csv to the Quest.
+  A `pull_data` script (`tools/pull_data.sh|ps1`) runs `adb pull`, verifies the
   file count, then deletes the files from the headset, at the end of each
   session day.
 - Breaks and abort:

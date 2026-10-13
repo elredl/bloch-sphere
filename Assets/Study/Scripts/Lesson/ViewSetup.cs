@@ -7,8 +7,10 @@ namespace Study.Lesson
     // conditions, the fixed desktop camera in Condition 1. Both look at the
     // same sphere from the same eye point. The XR rig is inactive in the saved
     // scene so it never renders a stray frame in the desktop condition.
+    // In the launch scene (no lesson) it uses the headset whenever one is active.
     public class ViewSetup : MonoBehaviour
     {
+        [Tooltip("Empty in the launch scene.")]
         [SerializeField] LessonController lesson;
         [SerializeField] GameObject desktopCamera;
         [SerializeField] GameObject xrOrigin;
@@ -18,19 +20,22 @@ namespace Study.Lesson
         void Awake()
         {
             bool headsetActive = XRSettings.isDeviceActive;
-            bool useXr = lesson.Config.UsesHeadset && headsetActive;
+            bool wantsHeadset = lesson == null ? headsetActive : lesson.Config.UsesHeadset;
+            bool useXr = wantsHeadset && headsetActive;
             xrOrigin.SetActive(useXr);
             desktopCamera.SetActive(!useXr);
-            // Passive learners keep their controllers (same as Cond 3) but get no pointer rays.
-            foreach (GameObject interactor in interactors) interactor.SetActive(lesson.Config.LearnerRotates);
+            // Lesson scene: SessionFlow switches the rays on for orientation and the end screen; in the
+            // lesson passive learners keep their controllers (same as Cond 3) but get no pointer rays.
+            foreach (GameObject interactor in interactors) interactor.SetActive(lesson == null || lesson.Config.LearnerRotates);
+            string who = lesson == null ? "launch" : lesson.Config.ToString();
 
-            if (lesson.Config.UsesHeadset && !headsetActive)
+            if (wantsHeadset && !headsetActive)
             {
                 // Expected in the Linux Editor (no Quest Link). A headset build must never get here.
-                if (Application.isEditor) Debug.LogWarning($"[View] {lesson.Config}: no headset active, using the desktop camera as a dev view.");
-                else Debug.LogError($"[View] {lesson.Config}: headset condition but no XR device is active.");
+                if (Application.isEditor) Debug.LogWarning($"[View] {who}: no headset active, using the desktop camera as a dev view.");
+                else Debug.LogError($"[View] {who}: headset condition but no XR device is active.");
             }
-            Debug.Log($"[View] {lesson.Config}: {(useXr ? "XR rig" : "desktop camera")}");
+            Debug.Log($"[View] {who}: {(useXr ? "XR rig" : "desktop camera")}");
         }
     }
 }

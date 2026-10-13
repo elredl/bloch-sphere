@@ -1,0 +1,17 @@
+utc,session_s,lesson_s,participant,condition,stratum,event,fields
+2026-10-13T20:40:29.788Z,0.004,,DEV144029,2,novice,session_start,source=dev app=1.0 unity=6000.6.0f1 platform=LinuxEditor device=PC
+2026-10-13T20:40:29.795Z,0.011,,DEV144029,2,novice,calibration,source=desktop_fixed eye_height=1.200
+2026-10-13T20:40:35.640Z,5.856,,DEV144029,2,novice,orientation_start,duration=120 input=mouse
+2026-10-13T20:40:41.000Z,11.216,,DEV144029,2,novice,orientation_step,step=select round=1 t=96.31
+2026-10-13T20:40:42.297Z,12.513,,DEV144029,2,novice,orientation_incomplete,done=select missing=press;rotate
+2026-10-13T20:40:42.303Z,12.519,,DEV144029,2,novice,orientation_end,rounds=0 steps=1 t=120.28
+2026-10-13T20:40:43.201Z,13.417,0.000,DEV144029,2,novice,lesson_start,clip=Placeholder Narration duration=900.0
+2026-10-13T20:40:43.244Z,13.459,0.600,DEV144029,2,novice,segment_start,segment=superposition scheduled=0.000
+2026-10-13T20:40:51.778Z,21.994,150.524,DEV144029,2,novice,pause_onset,pause=1 task=pause1 scheduled=150.000
+2026-10-13T20:40:55.201Z,25.416,210.193,DEV144029,2,novice,pause_offset,pause=1 scheduled=210.000
+2026-10-13T20:40:55.213Z,25.429,210.193,DEV144029,2,novice,segment_start,segment=bloch_sphere scheduled=210.000
+2026-10-13T20:41:00.668Z,30.884,304.024,DEV144029,2,novice,break_start,step=lesson input=key_b
+2026-10-13T20:41:05.796Z,36.011,304.024,DEV144029,2,novice,break_end,duration=5.13 ended_by=dev step=lesson
+2026-10-13T20:41:09.205Z,39.420,361.865,DEV144029,2,novice,abort,step=lesson input=dev
+2026-10-13T20:41:11.790Z,42.005,,DEV144029,2,novice,withdrawal,reason=participant_request
+2026-10-13T20:41:11.797Z,42.012,,DEV144029,2,novice,session_end,status=withdrawn events=16

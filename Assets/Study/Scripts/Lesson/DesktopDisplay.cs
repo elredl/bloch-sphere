@@ -1,18 +1,21 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace Study.Lesson
 {
-    // Condition 1 display: 1920 x 1080 borderless fullscreen at 60 Hz with vsync, the
-    // cursor hidden for the lesson (the mouse is only for orientation and the end screen,
-    // Checkpoint 6). Logs what the monitor actually gave, so a wrong monitor setting
-    // shows up in the session log instead of silently changing the framing or pacing.
-    // Does nothing in the headset conditions.
+    // Condition 1 display: 1920 x 1080 borderless fullscreen at 60 Hz with vsync. Logs what
+    // the monitor actually gave, so a wrong monitor setting shows up in the session log
+    // instead of silently changing the framing or pacing. Does nothing in the headset
+    // conditions. In the launch scene (no lesson) it applies whenever no headset is active.
+    // SessionFlow hides the cursor for the lesson (the mouse is only for orientation and
+    // the end screen).
     //
     // Dev flags for builds: -dev-windowed (leave the window as launched), -dev-mute.
     public class DesktopDisplay : MonoBehaviour
     {
+        [Tooltip("Empty in the launch scene.")]
         [SerializeField] LessonController lesson;
         [SerializeField] int width = 1920;
         [SerializeField] int height = 1080;
@@ -20,31 +23,22 @@ namespace Study.Lesson
 
         void Start()
         {
-            if (lesson.Config.UsesHeadset) return;
+            bool headset = lesson != null ? lesson.Config.UsesHeadset : XRSettings.isDeviceActive;
+            if (headset) return;
             bool windowed = HasArg("-dev-windowed");
             if (!Application.isEditor && !windowed)
                 Screen.SetResolution(width, height, FullScreenMode.FullScreenWindow,
                     new RefreshRate { numerator = (uint)refreshHz, denominator = 1 });
             QualitySettings.vSyncCount = 1; // one frame per monitor refresh
             Application.targetFrameRate = -1;
-            if (!Application.isEditor) SetCursorHidden(true);
             if (HasArg("-dev-mute")) AudioListener.volume = 0; // the narration still runs the clock
-            lesson.LessonEnded += OnLessonEnded;
             StartCoroutine(ReportDisplay(windowed));
         }
 
-        void OnDestroy()
+        // Never in the Editor, where a locked cursor would trap the developer.
+        public static void SetCursorHidden(bool hidden)
         {
-            if (lesson != null) lesson.LessonEnded -= OnLessonEnded;
-        }
-
-        void OnLessonEnded()
-        {
-            if (!Application.isEditor) SetCursorHidden(false);
-        }
-
-        static void SetCursorHidden(bool hidden)
-        {
+            if (Application.isEditor) return;
             Cursor.visible = !hidden;
             Cursor.lockState = hidden ? CursorLockMode.Locked : CursorLockMode.None;
         }
@@ -55,7 +49,7 @@ namespace Study.Lesson
             yield return null;
             yield return null;
             double hz = Screen.currentResolution.refreshRateRatio.value;
-            string report = $"[Display] {lesson.Config} window {Screen.width}x{Screen.height} {Screen.fullScreenMode}, " +
+            string report = $"[Display] {(lesson != null ? lesson.Config.ToString() : "launch")} window {Screen.width}x{Screen.height} {Screen.fullScreenMode}, " +
                             $"monitor {Screen.currentResolution.width}x{Screen.currentResolution.height} @ {hz:F2} Hz, vSync={QualitySettings.vSyncCount}" +
                             (windowed ? " (dev windowed)" : "");
             bool wrong = !Application.isEditor && !windowed &&

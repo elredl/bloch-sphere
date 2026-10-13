@@ -164,7 +164,7 @@ namespace Study.EditorTools
         }
 
         // A neon-framed button: frame rectangle, inset fill (the click target), centered label.
-        static (Button, Image, Image, TextMeshProUGUI) PanelButton(RectTransform parent, string name,
+        internal static (Button, Image, Image, TextMeshProUGUI) PanelButton(RectTransform parent, string name,
             float x0, float y0, float x1, float y1, float fontSize)
         {
             Image frame = Box(parent, name, x0, y0, x1, y1);
@@ -177,7 +177,7 @@ namespace Study.EditorTools
             return (button, frame, fill, label);
         }
 
-        static void SetArray(SerializedObject so, string field, params Object[] values)
+        internal static void SetArray(SerializedObject so, string field, params Object[] values)
         {
             var property = so.FindProperty(field);
             property.arraySize = values.Length;
@@ -250,7 +250,7 @@ namespace Study.EditorTools
         }
 
         // Rectangle in parent millimetres from the bottom-left corner.
-        static void Place(RectTransform rect, float x0, float y0, float x1, float y1)
+        internal static void Place(RectTransform rect, float x0, float y0, float x1, float y1)
         {
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.zero;
@@ -259,7 +259,7 @@ namespace Study.EditorTools
             rect.sizeDelta = new Vector2(x1 - x0, y1 - y0);
         }
 
-        static Image Box(RectTransform parent, string name, float x0, float y0, float x1, float y1)
+        internal static Image Box(RectTransform parent, string name, float x0, float y0, float x1, float y1)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
             var rect = (RectTransform)go.transform;
@@ -270,7 +270,7 @@ namespace Study.EditorTools
             return image;
         }
 
-        static TextMeshProUGUI Text(RectTransform parent, string name, string text, float size,
+        internal static TextMeshProUGUI Text(RectTransform parent, string name, string text, float size,
             float x0, float y0, float x1, float y1, TextAlignmentOptions alignment)
         {
             var go = new GameObject(name, typeof(RectTransform));

@@ -1,0 +1,29 @@
+{
+    "calibrationTitle": "GET READY",
+    "calibrationVr": "Sit upright and look straight ahead. The experimenter will set up your view.",
+    "readyTitle": "GET READY",
+    "readyVr": "Pull the trigger when you are ready to begin.",
+    "readyDesktop": "Click when you are ready to begin.",
+
+    "practiceTitle": "PRACTICE",
+    "selectVr": "Point at the lit ring and pull the trigger.",
+    "selectDesktop": "Click the lit ring.",
+    "pressVr": "Point at the button and pull the trigger.",
+    "pressDesktop": "Click the button.",
+    "pressLabel": "PRESS",
+    "rotateVr": "Squeeze the grip to grab the glowing handle, then turn the cube the way the arrow points. Let go when it stops.",
+    "rotateDesktop": "Press and hold the mouse button on the glowing handle, then drag to turn the cube the way the arrow points. Let go when it stops.",
+    "roundDone": "Well done. You can practise again until the lesson begins.",
+
+    "breakTitle": "PAUSED",
+    "breakKey": "The lesson is paused.",
+    "breakResumeVr": "Pull the trigger to continue.",
+    "abortHold": "Keep holding to stop the session.",
+
+    "endTitle": "THANK YOU",
+    "endCompletedVr": "The lesson is over. Please take off the headset and let the experimenter know.",
+    "endCompletedDesktop": "The lesson is over. Please look away from the screen and let the experimenter know.",
+    "endStoppedVr": "The session has stopped. Please take off the headset and let the experimenter know.",
+    "endStoppedDesktop": "The session has stopped. Please look away from the screen and let the experimenter know.",
+    "experimenterButton": "Experimenter"
+}

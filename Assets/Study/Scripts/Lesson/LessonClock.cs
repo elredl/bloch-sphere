@@ -20,6 +20,7 @@ namespace Study.Lesson
         const double SnapThreshold = 0.05;  // seconds
         const double CorrectionRate = 0.1;  // fraction of the error removed per frame
         const double FrameClockMaxStep = 1.0 / 30; // real seconds per frame, frame-time clock only
+        const double EndWindow = 1.0;       // audio that stops this close to the clip's end has finished
 
         readonly AudioSource source;
         readonly double frameClockSpeed; // 0 = locked to audio
@@ -63,10 +64,12 @@ namespace Study.Lesson
                 return;
             }
 
-            // When a clip plays to its end Unity stops it and resets timeSamples to 0.
+            // When a clip plays to its end Unity stops it and resets timeSamples to 0. Audio that
+            // stops anywhere else (the system paused it, say, before a headset-off break began)
+            // is a stall: lesson time waits for it instead of jumping to the end.
             if (!source.isPlaying)
             {
-                if (time > 0)
+                if (time > 0 && time >= source.clip.length - EndWindow)
                 {
                     time = source.clip.length;
                     finished = true;

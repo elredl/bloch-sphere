@@ -61,6 +61,54 @@ namespace Study.EditorTools
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
         }
 
+        const string BaseVersion = "1.0";
+
+        public static string BuildVersion()
+        {
+            string commit = Git("rev-parse --short HEAD");
+            // Only the study's own code, data, scenes and packages count: builds and Play Mode rewrite
+            // some Unity settings and the dynamic font atlases by themselves.
+            bool dirty = Git("status --porcelain --untracked-files=no -- Assets/Study :!Assets/Study/Fonts Packages").Length > 0;
+            return commit.Length == 0 ? BaseVersion : $"{BaseVersion}+{commit}{(dirty ? "-dirty" : "")}";
+        }
+
+        static string Git(string args)
+        {
+            try
+            {
+                var info = new System.Diagnostics.ProcessStartInfo("git", args)
+                {
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = System.IO.Path.GetDirectoryName(Application.dataPath),
+                };
+                using var process = System.Diagnostics.Process.Start(info);
+                string output = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit();
+                return process.ExitCode == 0 ? output : "";
+            }
+            catch (System.Exception)
+            {
+                return "";
+            }
+        }
+
+        // BUILD_STAMP.txt next to the build: what was built, from which commit, when.
+        static void WriteStamp(BuildReport report, string version, string path)
+        {
+            string folder = System.IO.Path.GetDirectoryName(path);
+            System.IO.File.WriteAllText(System.IO.Path.Combine(folder, "BUILD_STAMP.txt"),
+                $"file      {System.IO.Path.GetFileName(path)}\n" +
+                $"result    {report.summary.result}\n" +
+                $"version   {version}\n" +
+                $"commit    {Git("rev-parse HEAD")}\n" +
+                $"built     {System.DateTime.Now:yyyy-MM-dd HH:mm}\n" +
+                $"unity     {Application.unityVersion}\n" +
+                $"target    {report.summary.platform}\n" +
+                $"package   {PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(report.summary.platform)))}\n");
+        }
+
         static string Build(BuildTarget target, BuildTargetGroup group, string path)
         {
             if (EditorUserBuildSettings.activeBuildTarget != target)
@@ -82,7 +130,14 @@ namespace Study.EditorTools
                 target = target,
                 options = BuildOptions.None,
             };
+            // The version names the commit, so every session file (session_start app=...) says
+            // exactly which build ran it. "-dirty": built with uncommitted changes.
+            string version = BuildVersion();
+            PlayerSettings.bundleVersion = version;
             BuildReport report = BuildPipeline.BuildPlayer(options);
+            WriteStamp(report, version, path);
+            PlayerSettings.bundleVersion = BaseVersion; // keep ProjectSettings unchanged by the stamp
+            AssetDatabase.SaveAssets();
 
             var s = report.summary;
             string errors = string.Join(" | ", report.steps.SelectMany(step => step.messages)

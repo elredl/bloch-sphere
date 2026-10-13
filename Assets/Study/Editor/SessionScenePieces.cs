@@ -275,7 +275,7 @@ namespace Study.EditorTools
             var layout = new Layout
             {
                 W = 300, H = 360, Body = new Vector4(12, 262, 288, 324), BodyFont = 14,
-                Footer = new Vector4(12, 56, 288, 96), FooterFont = 10, ButtonFont = 14,
+                Footer = new Vector4(12, 52, 288, 100), FooterFont = 9, ButtonFont = 14,
             };
             const float kw = 60, kh = 34, gap = 6;
             float left = (layout.W - (3 * kw + 2 * gap)) / 2;

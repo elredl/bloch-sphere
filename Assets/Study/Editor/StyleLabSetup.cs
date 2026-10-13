@@ -241,6 +241,7 @@ namespace Study.EditorTools
             var viewSo = new SerializedObject(view);
             SetArray(viewSo, "interactors", interactors);
             viewSo.ApplyModifiedProperties();
+            lessonObject.AddComponent<DisplayRate>(); // 90 Hz, also when the Lesson scene is the first one loaded
             lessonObject.AddComponent<FrameStats>(); // frame timing to the log, for the Quest frame-rate check
             Set(lessonObject.AddComponent<DesktopDisplay>(), "lesson", lesson); // Condition 1 screen, vsync
 
@@ -292,6 +293,7 @@ namespace Study.EditorTools
             SetArray(viewSo, "interactors", interactors);
             viewSo.ApplyModifiedProperties();
             setup.AddComponent<DesktopDisplay>();
+            setup.AddComponent<DisplayRate>(); // Quest: ask for 90 Hz from the first frame
             SessionScenePieces.AddLaunchScreen(palette);
             styler.Apply();
             EditorSceneManager.SaveScene(scene, LaunchScenePath);

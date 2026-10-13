@@ -7,6 +7,7 @@ using Study.Visuals;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.XR;
 
 namespace Study.Session
 {
@@ -78,8 +79,28 @@ namespace Study.Session
             Debug.Log("[Launch] " + allocationStatus);
         }
 
+        // Build, display rate and battery, so the experimenter sees a 72 Hz headset or a low
+        // battery before the session starts.
+        static string DeviceStatus()
+        {
+            string rate = DisplayRate.Status;
+            if (XRSettings.isDeviceActive && DisplayRate.Known && !DisplayRate.Ok) rate = Red(rate);
+            float battery = SystemInfo.batteryLevel;
+            string power = battery < 0 ? "" : $"   battery {battery * 100:F0}%";
+            if (battery >= 0 && battery < 0.4f && SystemInfo.batteryStatus != BatteryStatus.Charging) power = Red(power);
+            return $"build {Application.version}   {rate}{power}";
+        }
+
+        float footerRefresh;
+
         void Update()
         {
+            footerRefresh += Time.unscaledDeltaTime;
+            if (footerRefresh > 1f)
+            {
+                footerRefresh = 0;
+                panel.SetFooter($"{allocationStatus}\nData: {StudySession.DataDirectory}\n{DeviceStatus()}");
+            }
             if (view != View.Entry || Keyboard.current == null) return;
             Keyboard k = Keyboard.current;
             for (int d = 0; d <= 9; d++)
@@ -105,7 +126,7 @@ namespace Study.Session
             string cursor = digits.Length < maxDigits ? "_" : "";
             string body = view == View.Entry ? $"<size=150%>{Code}{cursor}</size>\n{message}" : message;
             panel.Show("SESSION", body);
-            panel.SetFooter($"{allocationStatus}\nData: {StudySession.DataDirectory}");
+            panel.SetFooter($"{allocationStatus}\nData: {StudySession.DataDirectory}\n{DeviceStatus()}");
         }
 
         void ShowChoice(View next, string text, params (string, Action)[] choices)

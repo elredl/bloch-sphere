@@ -411,3 +411,7 @@ axis (decided at Checkpoint 1.5, 2026-10-12). Same turn in all conditions.
 6. Telemetry, session flow, calibration, orientation, breaks, abort, pull_data.
 7. Pilot hardening: 90 Hz at startup, builds, `BUILD_INFO.md`,
    `EXPERIMENTER_CHECKLIST.md`, end-to-end dry run table.
+   Done 2026-10-13: `DisplayRate` requests 90 Hz and the launch screen shows the actual rate,
+   battery and build version; builds carry `1.0+<commit>` (`BUILD_STAMP.txt`); docs in
+   `docs/BUILD_INFO.md`, `docs/EXPERIMENTER_CHECKLIST.md`, `docs/DRY_RUNS.md` (device rows
+   still to run).

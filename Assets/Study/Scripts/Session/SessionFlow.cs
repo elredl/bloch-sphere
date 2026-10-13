@@ -86,6 +86,7 @@ namespace Study.Session
                 session = StudySession.Start("DEV" + DateTime.Now.ToString("HHmmss"), lesson.Config.Condition, "novice", "dev");
             }
             headset = lesson.Config.UsesHeadset && XRSettings.isDeviceActive;
+            if (headset) StartCoroutine(LogDisplayRate());
             lesson.LessonEnded += OnLessonEnded;
             orientation.Finished += StartLesson;
             overlay.Hide();
@@ -104,6 +105,18 @@ namespace Study.Session
                 StudyEvents.Log("calibration", $"source=desktop_fixed eye_height={DefaultEyeHeight:F3}");
                 EnterReady();
             }
+        }
+
+        // The 90 Hz request (DisplayRate) settles within a second or two of start-up.
+        System.Collections.IEnumerator LogDisplayRate()
+        {
+            float waited = 0;
+            while (!DisplayRate.Known && waited < 5f)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            DisplayRate.LogToSession();
         }
 
         void OnDestroy()

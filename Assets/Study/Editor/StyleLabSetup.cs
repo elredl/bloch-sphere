@@ -29,7 +29,7 @@ namespace Study.EditorTools
         static readonly Vector3 SphereCenter = DefaultEye + new Vector3(0f, -0.25f, 0.8f);
         // Oblique textbook view: the sphere is turned so +x points toward the participant's
         // front-left instead of straight at them (where it would shrink to a dot).
-        // PROPOSED at Checkpoint 1.5, awaiting confirmation.
+        // Decided at Checkpoint 1.5; see docs/STUDY_SPEC.md, Coordinate convention.
         const float SphereYawDegrees = 30f;
 
         public static string BuildAll()
@@ -37,7 +37,7 @@ namespace Study.EditorTools
             string fonts = EnsureFonts();
             EnsurePalette();
             BuildLessonScene();
-            return fonts + " | palette and Lesson scene built";
+            return fonts + " | palette and Lesson scene built | " + LessonScenePieces.DisableHandTracking();
         }
 
         static string EnsureFonts()
@@ -140,7 +140,18 @@ namespace Study.EditorTools
             AddChild<AngleArcsView>(sphere, "Angle Arcs");
             AddChild<ArcTrailView>(sphere, "Arc Trail");
             AddChild<GateAxisView>(sphere, "Gate Axis");
-            AddChild<StateVectorView>(sphere, "State Vector");
+            var vectorView = AddChild<StateVectorView>(sphere, "State Vector");
+            var ghost = AddChild<StateVectorView>(sphere, "Ghost Vector");
+            var ghostSo = new SerializedObject(ghost);
+            ghostSo.FindProperty("followsState").boolValue = false;
+            ghostSo.FindProperty("isGhost").boolValue = true;
+            ghostSo.ApplyModifiedProperties();
+            var flash = AddChild<CollapseFlashView>(sphere, "Collapse Flash");
+            var effects = sphere.AddComponent<VectorEffects>();
+            Set(effects, "state", state);
+            Set(effects, "animator", animator);
+            Set(effects, "vector", vectorView);
+            Set(effects, "flash", flash);
 
             // Desktop (Condition 1) camera at the default eye point, pitched to center
             // the sphere, 60 deg vertical FOV. Post-processing (bloom) off by default.
@@ -170,10 +181,37 @@ namespace Study.EditorTools
             Set(lesson, "state", state);
             Set(lesson, "animator", animator);
             Set(lesson, "angleArcs", sphere.GetComponentInChildren<AngleArcsView>());
+            Set(lesson, "effects", effects);
+            Set(lesson, "flash", flash);
+
+            var panel = LessonScenePieces.AddMeasurementPanel(palette, SphereCenter, DefaultEye);
+            var demo = lessonObject.AddComponent<MeasurementDemo>();
+            Set(demo, "lesson", lesson);
+            Set(demo, "state", state);
+            Set(demo, "effects", effects);
+            Set(demo, "ghost", ghost);
+            Set(demo, "panel", panel);
+            Set(lesson, "demo", demo);
+
             var director = lessonObject.AddComponent<PauseDirector>();
             Set(director, "lesson", lesson);
             Set(director, "animator", animator);
             Set(director, "dimmer", sphere.GetComponent<SphereDimmer>());
+            Set(director, "demo", demo);
+
+            LessonScenePieces.AddGrabTarget(sphere, lesson, state);
+
+            // Headset rig (inactive in the saved scene) and the switch between it and the desktop camera.
+            var (xrOrigin, interactors) = LessonScenePieces.AddXrRig();
+            var view = lessonObject.AddComponent<ViewSetup>();
+            Set(view, "lesson", lesson);
+            Set(view, "desktopCamera", cameraObject);
+            Set(view, "xrOrigin", xrOrigin);
+            var viewSo = new SerializedObject(view);
+            SetArray(viewSo, "interactors", interactors);
+            viewSo.ApplyModifiedProperties();
+            lessonObject.AddComponent<FrameStats>(); // frame timing to the log, for the Quest frame-rate check
+            styler.Apply(); // style the XR camera's background too
 
             EditorSceneManager.SaveScene(scene, ScenePath);
         }

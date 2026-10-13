@@ -4,7 +4,8 @@
     "references": [
         "Study.Quantum",
         "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Unity.XR.Interaction.Toolkit"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

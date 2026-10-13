@@ -19,6 +19,7 @@ namespace Study.Visuals
         public Func<double> Clock = () => Time.timeAsDouble;
 
         public bool IsPlaying => activeGate != null;
+        public double ScheduledEnd => startTime + duration;
         public Gate ActiveGate => activeGate;
 
         Gate activeGate;

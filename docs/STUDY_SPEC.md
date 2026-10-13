@@ -138,13 +138,25 @@ amount, then freeze.
 - Scripted and identical in all three conditions at fixed times; the learner
   never triggers shots. Used at segment 4 (on |+>) and pause 4 (on Ry(pi/3)|0>).
 - 100 shots, fixed seed per demo. Seeds are pre-checked so the result lands
-  close to the true probability (about 74/26 for pause 4, about 50/50 for |+>).
+  close to the true probability. Chosen at Checkpoint 3: seed 27 gives exactly
+  50/50 on |+>, seed 57 gives exactly 75/25 on Ry(pi/3)|0> (true value 75/25).
 - First 5 shots get the full collapse at 1 Hz: flash about 150 ms, snap to the
   pole, hold, fade out, fade back in at the prepared state. The remaining 95
   fill the histogram over about 4 s with no flash and no vector motion. A
   counter shows the shots running.
 - A dim, constant "ghost" vector stays at the prepared state for the whole
   demo, so the fade-in reads as "prepared again".
+- The histogram panel sits upper right of the sphere (196 x 180 mm, inside the
+  Cond 1 frame), shows the shot counter and per-outcome counts with
+  percentages, and hides when the narration moves on (t = 820 s) or at the end
+  of pause 4.
+
+### State changes that are not gates
+
+- `set_state` (re-preparing the qubit, e.g. back to |0> before a new gate)
+  fades the vector out, changes the state while it is invisible and fades it
+  back in, 0.6 s in total. It never animates as a rotation and leaves no
+  trail, so it cannot be mistaken for a gate.
 
 ### Design requirements from the paper
 
@@ -219,6 +231,9 @@ red vs green; never color alone (pair with labels or shape).
 
 - Quest 3 holds 90 Hz. Glow from emissive unlit materials and fresnel/halo
   shaders. If bloom is used, measure frame rate with and without and report both.
+  Bloom is not used (Checkpoint 3): the halo tubes give the glow, post-processing
+  is off on every camera and the Quest renderer has none, so the device check
+  is one build, `Builds/Quest/lesson_nobloom.apk`, read from `[Frames]` log lines.
 - No flashing faster than 3 Hz, no full-field strobes. Measurement flash is a
   single short pulse localized to the sphere.
 - Cond 3 feedback: cyan for correct, amber for incorrect, always with text.
@@ -291,10 +306,13 @@ Questionnaires and tests happen on a tablet outside the app.
 
 ## Coordinate convention
 
-Bloch +z is up (Unity +Y), Bloch +x points toward the participant (Unity -Z,
-since the participant faces +Z), Bloch +y points to the participant's right
-(Unity +X). This is the usual textbook drawing. The conversion lives in one
-place (`BlochSpace`).
+Bloch +z is up (Unity +Y). In the sphere's own frame, Bloch +x points toward
+the participant and Bloch +y to their right; the conversion lives in one place
+(`BlochSpace`). The whole sphere is then turned 30 deg about the vertical so +x
+points toward the participant's front-left and +y to the right and slightly
+toward them: the textbook oblique view. Without the turn, x points straight at
+the viewer and collapses to a dot, and the prime meridian hides behind the z
+axis (decided at Checkpoint 1.5, 2026-10-12). Same turn in all conditions.
 
 ## Checkpoints
 

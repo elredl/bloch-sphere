@@ -82,6 +82,12 @@ namespace Study.Visuals
         [Header("Measurement")]
         public Color histogramZero = Hex("#00F0FF");
         public Color histogramOne = Hex("#FF2E88");
+        [Tooltip("Brightness of the ghost vector that marks the prepared state during a demo.")]
+        [Range(0, 1)] public float ghostVectorIntensity = 0.25f;
+        [Tooltip("Collapse flash: one short pulse on the sphere, never repeated faster than 1 Hz.")]
+        public Color collapseFlashColor = Color.white;
+        [Range(0, 2)] public float collapseFlashIntensity = 0.9f;
+        public float collapseFlashSeconds = 0.15f;
 
         [Header("Feedback (Condition 3)")]
         public Color feedbackCorrect = Hex("#00F0FF");

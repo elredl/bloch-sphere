@@ -12,6 +12,8 @@ namespace Study.Lesson
     // All timing comes from LessonClock (the audio position), never from frame
     // counting, so pacing cannot drift from the narration. The same schedule
     // runs in every condition; only PauseDirector behaves differently.
+    // Runs first so Config is set before any other component's Awake reads it.
+    [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(AudioSource))]
     public class LessonController : MonoBehaviour
     {
@@ -21,6 +23,9 @@ namespace Study.Lesson
         [SerializeField] QubitState state;
         [SerializeField] GateArcAnimator animator;
         [SerializeField] AngleArcsView angleArcs;
+        [SerializeField] VectorEffects effects;
+        [SerializeField] CollapseFlashView flash;
+        [SerializeField] MeasurementDemo demo;
 
         [Header("Development only")]
         [Tooltip("Used when no session has set the condition (before Checkpoint 6's launch screen).")]
@@ -63,6 +68,8 @@ namespace Study.Lesson
             source.playOnAwake = false;
             source.loop = false;
             source.spatialBlend = 0f; // narration is not positional
+            // Resolved here (not in Begin) so other components can read it in their Start.
+            Config = ConditionConfig.Current ?? new ConditionConfig(devCondition);
         }
 
         void Start()
@@ -72,7 +79,6 @@ namespace Study.Lesson
 
         public void Begin()
         {
-            Config = ConditionConfig.Current ?? new ConditionConfig(devCondition);
             Timeline = LessonTimeline.FromJson(timelineJson.text);
 
             List<string> errors = Timeline.Validate();
@@ -82,6 +88,9 @@ namespace Study.Lesson
                 narration = PlaceholderNarration.Create(Timeline);
                 Debug.LogWarning("[Lesson] No narration clip assigned: using the generated placeholder.");
             }
+            double demoWindow = Timeline.pauseSchedule.measurementDemoEnd - Timeline.pauseSchedule.measurementDemoStart;
+            if (MeasurementDemo.Duration > demoWindow)
+                errors.Add($"measurement demo takes {MeasurementDemo.Duration}s but its window is {demoWindow}s");
             if (Math.Abs(narration.length - Timeline.lessonDuration) > 0.5)
                 errors.Add($"narration clip is {narration.length:F2}s but the timeline lasts {Timeline.lessonDuration:F2}s");
             if (errors.Count > 0)
@@ -94,6 +103,8 @@ namespace Study.Lesson
             BuildSchedule();
             clock = new LessonClock(source);
             animator.Clock = () => clock.Time;
+            effects.Clock = () => clock.Time;
+            flash.Clock = () => clock.Time;
             source.clip = narration;
             source.pitch = 1f;
 #if UNITY_EDITOR
@@ -139,10 +150,21 @@ namespace Study.Lesson
             while (nextItem < schedule.Count && schedule[nextItem].Time <= clock.Time)
             {
                 ScheduledItem item = schedule[nextItem++];
+                FinishTransitionsEndingBy(item.Time);
                 Record(item.Label, item.Time);
                 item.Fire();
             }
         }
+
+#if UNITY_EDITOR
+        // Editor only: jump the narration forward to take screenshots of late moments.
+        // Everything scheduled before the new time fires in order, as after a hitch.
+        public void DevSeek(double seconds)
+        {
+            source.time = (float)seconds;
+            Debug.LogWarning($"[Lesson] Dev seek to {seconds:F1}s (Editor only).");
+        }
+#endif
 
         // Writes one line to the pacing report: when something was scheduled and when it actually fired.
         public void Record(string label, double scheduled)
@@ -177,6 +199,15 @@ namespace Study.Lesson
             schedule.Sort((a, b) => a.Time != b.Time ? a.Time.CompareTo(b.Time) : a.Order.CompareTo(b.Order));
         }
 
+        // When several items come due in one frame (a hitch), an arc or re-preparation
+        // that should already have ended must land before the next item starts from its
+        // result. The timeline rules guarantee these never overlap, so this is exact.
+        void FinishTransitionsEndingBy(double time)
+        {
+            if (animator.IsPlaying && animator.ScheduledEnd <= time) animator.Complete();
+            if (effects.IsBusy && effects.ScheduledEnd <= time) effects.Complete();
+        }
+
         void Add(double time, int order, string label, Action fire) =>
             schedule.Add(new ScheduledItem { Time = time, Order = order, Label = label, Fire = fire });
 
@@ -185,8 +216,7 @@ namespace Study.Lesson
             switch (e.type)
             {
                 case "set_state":
-                    if (animator.IsPlaying) animator.Complete();
-                    state.Set(Qubit.FromName(e.state));
+                    effects.Reprepare(Qubit.FromName(e.state), e.t, Timeline.reprepareDuration);
                     break;
                 case "apply_gate":
                     // Scheduled start, so a late frame shortens nothing and delays nothing.
@@ -195,6 +225,7 @@ namespace Study.Lesson
                 case "show":
                 case "hide":
                     if (e.target == "angle_arcs") angleArcs.Visible = e.type == "show";
+                    if (e.target == "measurement_panel" && e.type == "hide") demo.HidePanel();
                     break;
                 case "measure_demo":
                     MeasurementDemoRequested?.Invoke(e);
@@ -206,6 +237,8 @@ namespace Study.Lesson
         void CheckLiveStartState(LessonTimeline.PauseTask task)
         {
             if (animator.IsPlaying) animator.Complete();
+            effects.Complete();
+            demo.Finish();
             Qubit expected = Qubit.FromName(task.startState);
             if (!state.Current.IsSameStateAs(expected, 1e-6))
                 Debug.LogError($"[Lesson] {task.id}: live state {state.Current.Bloch} does not match timeline start state |{task.startState}>");

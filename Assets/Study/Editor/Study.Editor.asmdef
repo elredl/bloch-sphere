@@ -6,7 +6,11 @@
         "Study.Runtime",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
-        "Unity.RenderPipelines.Universal.Runtime"
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.XR.Interaction.Toolkit",
+        "Unity.XR.CoreUtils",
+        "Unity.XR.OpenXR",
+        "Unity.XR.OpenXR.Editor"
     ],
     "includePlatforms": [
         "Editor"

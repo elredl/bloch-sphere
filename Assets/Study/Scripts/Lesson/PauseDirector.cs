@@ -14,11 +14,13 @@ namespace Study.Lesson
     //               never acting: at rotationDeadline the rotation plays as the
     //               agreed timeout arc. Either way the end state is the same.
     //   All:        pause 4 runs the measurement demo at measurementDemoStart.
+    //   Nothing else is shown in Cond 1 / 2: no dimming, no prompt, no cues.
     public class PauseDirector : MonoBehaviour
     {
         [SerializeField] LessonController lesson;
         [SerializeField] GateArcAnimator animator;
         [SerializeField] SphereDimmer dimmer;
+        [SerializeField] MeasurementDemo demo;
 
         LessonTimeline.PauseTask task;
         int pauseIndex = -1;
@@ -54,6 +56,8 @@ namespace Study.Lesson
             // Safety net: the pause must never end without the operation applied.
             if (!arcDone) PlayArc(onset + lesson.Timeline.pauseSchedule.pauseLength, 0.001, "late arc (should not happen)");
             if (animator.IsPlaying) animator.Complete();
+            demo.Finish();
+            demo.HidePanel();
             if (lesson.Config.DimsAtPauses) dimmer.SetDimmed(false);
             pauseIndex = -1;
         }
@@ -76,7 +80,9 @@ namespace Study.Lesson
             {
                 demoDone = true;
                 lesson.Record($"pause{pauseIndex + 1} measurement demo", onset + p.measurementDemoStart);
-                Debug.Log($"[Pause] pause{pauseIndex + 1} measurement demo: {task.demoShots} shots, seed {task.demoSeed} (panel arrives in Checkpoint 3)");
+                // Demo on the state the pause operation produced (the same in every condition).
+                Qubit prepared = Gate.FromName(task.gate).Apply(Qubit.FromName(task.startState));
+                demo.Run(prepared, task.demoShots, task.demoSeed, onset + p.measurementDemoStart);
             }
         }
 

@@ -1,5 +1,6 @@
 {
     "lessonDuration": 900.0,
+    "reprepareDuration": 0.6,
 
     "pauseSchedule": {
         "pauseLength": 60.0,
@@ -36,6 +37,7 @@
 
         { "t": 720.0, "type": "apply_gate", "gate": "H", "duration": 3.0 },
         { "t": 760.0, "type": "measure_demo", "state": "+", "shots": 100, "seed": 27 },
+        { "t": 820.0, "type": "hide",       "target": "measurement_panel" },
         { "t": 830.0, "type": "set_state",  "state": "0" }
     ],
 

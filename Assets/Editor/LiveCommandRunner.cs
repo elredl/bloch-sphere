@@ -182,9 +182,16 @@ public static class LiveCommandRunner
         renderer.sharedMaterial = mat;
     }
 
+    // Actions that must not run while scripts compile or assets import: queuing Play Mode
+    // behind a stuck compile froze the Editor once (Checkpoint 3). Refuse instead.
+    static readonly string[] NeedsIdleEditor = { "set_play_mode", "call_static", "save_scene", "open_scene", "run_tests", "instantiate_prefab" };
+
     static string Execute(Command cmd)
     {
         var scene = EditorSceneManager.GetActiveScene();
+        bool busy = EditorApplication.isCompiling || EditorApplication.isUpdating;
+        if (busy && Array.IndexOf(NeedsIdleEditor, cmd.action) >= 0)
+            throw new Exception($"Editor busy (compiling={EditorApplication.isCompiling}, importing={EditorApplication.isUpdating}); '{cmd.action}' refused");
 
         switch (cmd.action)
         {
@@ -437,7 +444,7 @@ public static class LiveCommandRunner
             }
             case "is_playing":
             {
-                return $"isPlaying={EditorApplication.isPlaying} isCompiling={EditorApplication.isCompiling}";
+                return $"isPlaying={EditorApplication.isPlaying} isCompiling={EditorApplication.isCompiling} isUpdating={EditorApplication.isUpdating}";
             }
             default:
                 throw new Exception($"Unknown action '{cmd.action}'");

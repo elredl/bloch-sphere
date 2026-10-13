@@ -17,6 +17,9 @@ namespace Study.Lesson
     public class LessonTimeline
     {
         public double lessonDuration;
+        // A set_state is shown as a re-preparation: the vector fades out and back in at
+        // the new state (never a turn, so it can't be mistaken for a rotation).
+        public double reprepareDuration;
         public PauseSchedule pauseSchedule;
         public Segment[] segments;
         public LessonEvent[] events;
@@ -47,9 +50,9 @@ namespace Study.Lesson
         }
 
         // One scripted moment during narration. Fields used depend on type:
-        //   set_state   state                (re-prepare the qubit)
+        //   set_state   state                (re-prepare the qubit: fade out, fade in)
         //   apply_gate  gate, duration       (arc animation)
-        //   show / hide target               ("angle_arcs")
+        //   show / hide target               ("angle_arcs", "measurement_panel")
         //   measure_demo state, shots, seed  (repeated-measurement panel)
         [Serializable]
         public class LessonEvent
@@ -82,7 +85,7 @@ namespace Study.Lesson
         }
 
         public static readonly string[] KnownEventTypes = { "set_state", "apply_gate", "show", "hide", "measure_demo" };
-        public static readonly string[] KnownTargets = { "angle_arcs" };
+        public static readonly string[] KnownTargets = { "angle_arcs", "measurement_panel" };
 
         public static LessonTimeline FromJson(string json) => JsonUtility.FromJson<LessonTimeline>(json);
 
@@ -103,6 +106,7 @@ namespace Study.Lesson
                 errors.Add("timeout arc can overlap the measurement demo");
             if (p.measurementDemoEnd > p.pauseLength) errors.Add("measurement demo runs past the end of the pause");
             if (p.predictionDeadline > p.rotationDeadline) errors.Add("prediction deadline after rotation deadline");
+            if (reprepareDuration <= 0) errors.Add("reprepareDuration must be positive");
 
             double previousEnd = 0;
             for (int i = 0; i < segments.Length; i++)
@@ -129,6 +133,7 @@ namespace Study.Lesson
 
                 double end = e.t;
                 if (e.type == "set_state" || e.type == "measure_demo") CheckState(e.state, e.ToString(), errors);
+                if (e.type == "set_state") end = e.t + reprepareDuration;
                 if (e.type == "apply_gate")
                 {
                     CheckGate(e.gate, e.ToString(), errors);
@@ -142,6 +147,8 @@ namespace Study.Lesson
                 }
                 if ((e.type == "show" || e.type == "hide") && Array.IndexOf(KnownTargets, e.target) < 0)
                     errors.Add($"unknown target at {e}");
+                if (e.type == "show" && e.target == "measurement_panel")
+                    errors.Add($"the measurement panel is shown by measure_demo, not by show: {e}");
                 busyUntil = Math.Max(busyUntil, end);
 
                 // Pauses belong to the pause behavior, not to scripted narration events.

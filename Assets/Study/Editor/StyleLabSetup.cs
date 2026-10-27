@@ -154,6 +154,7 @@ namespace Study.EditorTools
             AddChild<AngleArcsView>(sphere, "Angle Arcs");
             AddChild<ArcTrailView>(sphere, "Arc Trail");
             AddChild<GateAxisView>(sphere, "Gate Axis");
+            AddChild<GateBadgeView>(sphere, "Gate Badge");
             var arrow = AddChild<GateDirectionView>(sphere, "Direction Arrow");
             var markers = AddChild<PositionMarkersView>(sphere, "Position Markers");
             var vectorView = AddChild<StateVectorView>(sphere, "State Vector");
@@ -162,6 +163,12 @@ namespace Study.EditorTools
             ghostSo.FindProperty("followsState").boolValue = false;
             ghostSo.FindProperty("isGhost").boolValue = true;
             ghostSo.ApplyModifiedProperties();
+            // Condition 3: the learner's placed prediction, dim like the demo ghost.
+            var prediction = AddChild<StateVectorView>(sphere, "Prediction Vector");
+            var predictionSo = new SerializedObject(prediction);
+            predictionSo.FindProperty("followsState").boolValue = false;
+            predictionSo.FindProperty("isGhost").boolValue = true;
+            predictionSo.ApplyModifiedProperties();
             var flash = AddChild<CollapseFlashView>(sphere, "Collapse Flash");
             var effects = sphere.AddComponent<VectorEffects>();
             Set(effects, "state", state);
@@ -228,6 +235,7 @@ namespace Study.EditorTools
             Set(embodied, "markers", markers);
             Set(embodied, "arrow", arrow);
             Set(embodied, "grab", grab);
+            Set(embodied, "predictionVector", prediction);
             Set(embodied, "feedbackJson", AssetDatabase.LoadAssetAtPath<TextAsset>(FeedbackPath));
             Set(director, "embodied", embodied);
             LessonScenePieces.AddEventSystem();

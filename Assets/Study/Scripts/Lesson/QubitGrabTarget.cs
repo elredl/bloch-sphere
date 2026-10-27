@@ -7,12 +7,13 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace Study.Lesson
 {
-    // The grab handle at the tip of the state vector (Condition 3 only; present
-    // but switched off in the shared Condition 2/3 build when the learner doesn't
-    // rotate). Grabbing works up close and by ray, so the seated learner never
-    // leans: the grab point is fixed to the controller like the end of a stick,
-    // so with a ray it sits out at the sphere and pointing moves it. Each frame
-    // the grab point goes to EmbodiedPause, whose ratchet decides the rotation.
+    // The grab handle at the tip of the prediction vector while the learner places a
+    // prediction (Condition 3 only; present but switched off in the shared Condition
+    // 2/3 build when the learner doesn't rotate). Grabbing works up close and by ray,
+    // so the seated learner never leans: the grab point is fixed to the controller
+    // like the end of a stick, so with a ray it sits out at the sphere and pointing
+    // moves it. Each frame the grab point goes to EmbodiedPause, which points the
+    // prediction vector at it.
     public class QubitGrabTarget : MonoBehaviour
     {
         // A grab that starts with the controller this close to the tip counts as "near".
@@ -38,7 +39,7 @@ namespace Study.Lesson
 
         void Start()
         {
-            Debug.Log($"[Grab] {lesson.Config}: grab handle present, usable={lesson.Config.LearnerRotates} (only after a gate press)");
+            Debug.Log($"[Grab] {lesson.Config}: grab handle present, usable={lesson.Config.LearnerRotates} (only while placing a prediction)");
         }
 
         void OnEnable()
@@ -92,7 +93,7 @@ namespace Study.Lesson
 
         void LateUpdate()
         {
-            transform.localPosition = rig.LocalPoint(state.Current.Bloch);
+            transform.localPosition = rig.LocalPoint(pause.HandleTip ?? state.Current.Bloch);
         }
     }
 }

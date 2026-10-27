@@ -138,14 +138,50 @@ namespace Study.Tests
             Assert.AreEqual("rotation_does_not_change_outcome", f.For(t.Task("pause1"), "100").Id);
             Assert.AreEqual("quarter_turn_reaches_one", f.For(t.Task("pause1"), "0").Id);
             Assert.AreEqual("generic_incorrect", f.For(t.Task("pause1"), "75").Id);
-            Assert.AreEqual("wrong_rotation_direction", f.For(t.Task("pause2"), "-i").Id);
-            Assert.AreEqual("polar_azimuthal_confusion", f.For(t.Task("pause2"), "1").Id);
-            Assert.AreEqual("z_rotation_does_nothing", f.For(t.Task("pause2"), "+").Id);
-            Assert.AreEqual("h_always_creates_superposition", f.For(t.Task("pause3"), "+").Id);
-            Assert.AreEqual("h_confused_with_x", f.For(t.Task("pause3"), "1").Id);
+            Assert.AreEqual("polar_azimuthal_confusion", f.For(t.Task("pause2"), "100").Id);
+            Assert.AreEqual("polar_azimuthal_confusion", f.For(t.Task("pause2"), "0").Id);
+            Assert.AreEqual("generic_incorrect", f.For(t.Task("pause2"), "75").Id);
+            Assert.AreEqual("h_always_undoes_h", f.For(t.Task("pause3"), "100").Id);
+            Assert.AreEqual("h_always_creates_superposition", f.For(t.Task("pause3"), "50").Id);
+            Assert.AreEqual("generic_incorrect", f.For(t.Task("pause3"), "25").Id);
             Assert.AreEqual("any_superposition_is_50_50", f.For(t.Task("pause4"), "50").Id);
             Assert.AreEqual("probability_linear_in_angle", f.For(t.Task("pause4"), "67").Id);
             Assert.AreEqual("only_equator_is_superposition", f.For(t.Task("pause4"), "100").Id);
+        }
+
+        [Test]
+        public void Placement_PointTasksNeedTheEndState_HeightTasksOnlyTheTilt()
+        {
+            LessonTimeline t = Timeline();
+            // Pause 2 (point): S takes |+i> to |->; |+> is the opposite point.
+            Assert.AreEqual(0, PauseFeedback.PlacementErrorDegrees(t.Task("pause2"), Qubit.Minus.Bloch), 1e-6);
+            Assert.AreEqual(180, PauseFeedback.PlacementErrorDegrees(t.Task("pause2"), Qubit.Plus.Bloch), 1e-6);
+            // Pause 1 (height): any equator point is right; the side is not asked.
+            Assert.AreEqual(0, PauseFeedback.PlacementErrorDegrees(t.Task("pause1"), Qubit.MinusI.Bloch), 1e-6);
+            Assert.AreEqual(90, PauseFeedback.PlacementErrorDegrees(t.Task("pause1"), Qubit.Zero.Bloch), 1e-6);
+            // Pause 4 (height): 60 deg from |0>; the equator is 30 deg off.
+            Assert.AreEqual(30, PauseFeedback.PlacementErrorDegrees(t.Task("pause4"), Qubit.Plus.Bloch), 1e-6);
+        }
+
+        [Test]
+        public void Placement_NearestNamedState_OnlyWithinTheSnapAngle()
+        {
+            Assert.AreEqual("+i", PauseFeedback.NearestNamedState(Qubit.FromBlochAngles(90 * Deg, 80 * Deg).Bloch, 30));
+            Assert.IsNull(PauseFeedback.NearestNamedState(Qubit.FromBlochAngles(120 * Deg, 45 * Deg).Bloch, 30));
+        }
+
+        [Test]
+        public void RealFeedback_MapsThePlacementMisconceptions()
+        {
+            PauseFeedback f = Feedback();
+            LessonTimeline t = Timeline();
+            Assert.AreEqual("wrong_rotation_direction", f.ForPlacement(t.Task("pause2"), true, false, "+").Id);
+            Assert.AreEqual("s_taken_as_half_turn", f.ForPlacement(t.Task("pause2"), true, false, "-i").Id);
+            Assert.AreEqual("h_always_undoes_h", f.ForPlacement(t.Task("pause3"), true, false, "0").Id);
+            Assert.AreEqual("sixty_reaches_equator", f.ForPlacement(t.Task("pause4"), true, false, "+i").Id);
+            Assert.AreEqual("generic_incorrect", f.ForPlacement(t.Task("pause3"), true, false, null).Id);
+            Assert.AreEqual("correct", f.ForPlacement(t.Task("pause1"), true, true, "+").Id);
+            Assert.AreEqual("no_prediction", f.ForPlacement(t.Task("pause1"), false, false, null).Type);
         }
 
         [Test]
@@ -153,6 +189,7 @@ namespace Study.Tests
         {
             LessonTimeline.PauseSchedule p = Timeline().pauseSchedule;
             Assert.LessOrEqual(p.rotationDeadline + p.timeoutArcMaxDuration, p.measurementDemoStart);
+            Assert.Less(p.placementDeadline, p.predictionDeadline);
             Assert.Less(p.predictionDeadline, p.rotationDeadline);
         }
     }

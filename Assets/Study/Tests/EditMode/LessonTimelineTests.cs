@@ -48,11 +48,14 @@ namespace Study.Tests
             LessonTimeline t = Load();
             // Correct answers follow from the physics, not from the data file.
             Assert.AreEqual(0.5, Gate.FromName(t.Task("pause1").gate).Apply(Qubit.Zero).ProbabilityZero, 1e-9);
-            Assert.IsTrue(Gate.FromName(t.Task("pause2").gate).Apply(Qubit.Plus).IsSameStateAs(Qubit.PlusI));
-            Assert.IsTrue(Gate.FromName(t.Task("pause3").gate).Apply(Qubit.Plus).IsSameStateAs(Qubit.Zero));
+            // End states (question 1, placement) and P(0) (question 2).
+            Assert.IsTrue(Gate.FromName(t.Task("pause2").gate).Apply(Qubit.PlusI).IsSameStateAs(Qubit.Minus));
+            Assert.IsTrue(Gate.FromName(t.Task("pause3").gate).Apply(Qubit.Minus).IsSameStateAs(Qubit.One));
+            Assert.AreEqual(0.5, Gate.FromName(t.Task("pause2").gate).Apply(Qubit.PlusI).ProbabilityZero, 1e-9);
+            Assert.AreEqual(0.0, Gate.FromName(t.Task("pause3").gate).Apply(Qubit.Minus).ProbabilityZero, 1e-9);
             Assert.AreEqual(0.75, Gate.FromName(t.Task("pause4").gate).Apply(Qubit.Zero).ProbabilityZero, 1e-9);
             Assert.AreEqual("50", t.Task("pause1").correct);
-            Assert.AreEqual("+i", t.Task("pause2").correct);
+            Assert.AreEqual("50", t.Task("pause2").correct);
             Assert.AreEqual("0", t.Task("pause3").correct);
             Assert.AreEqual("75", t.Task("pause4").correct);
         }
@@ -100,7 +103,7 @@ namespace Study.Tests
         public void Validate_CatchesEventInsideAPause()
         {
             LessonTimeline t = Load();
-            t.events[1].t = t.segments[0].pauseStart + 10; // move "show" (215 s) into pause 1
+            t.events[1].t = t.segments[0].pauseStart + 10; // move the second event into pause 1
             Assert.That(t.Validate(), Has.Some.Contains("overlaps the pause"));
         }
 

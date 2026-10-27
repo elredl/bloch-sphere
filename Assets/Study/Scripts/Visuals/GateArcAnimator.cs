@@ -12,9 +12,17 @@ namespace Study.Visuals
     // Condition 3 "held" mode: BeginHeld starts the gate (axis shows, trail
     // records) and the learner's grab sets the fraction directly; FinishFrom
     // then plays the rest of the arc on the clock. Same arc, same events.
+    //
+    // A named gate (X, Y, Z, H, S, T) gets its icon on the vector (GateBadgeView)
+    // and the vector holds still for the lead time before it turns; the arc still
+    // ends when scheduled. Plain rotations (resets between demos) move at once.
     public class GateArcAnimator : MonoBehaviour
     {
         [SerializeField] QubitState state;
+        [Tooltip("Seconds a named gate's icon shows on the still vector before it turns (taken from the arc's duration).")]
+        [SerializeField] double iconLeadSeconds = 0.8;
+
+        public static bool HasIcon(Gate gate) => gate != null && gate.Name.Length == 1;
 
         public event Action<Gate> Started;
         public event Action<Gate> Finished;
@@ -86,12 +94,14 @@ namespace Study.Visuals
         void Update()
         {
             if (!IsPlaying || held) return;
-            double fraction = (Clock() - startTime) / duration;
-            if (fraction >= 1)
+            double elapsed = Clock() - startTime;
+            if (elapsed >= duration)
             {
                 Complete();
                 return;
             }
+            double lead = HasIcon(activeGate) && fromFraction == 0 ? Math.Min(iconLeadSeconds, duration / 2) : 0;
+            double fraction = (elapsed - lead) / (duration - lead);
             state.Set(GateArc.StateAt(startState, activeGate, fromFraction + (1 - fromFraction) * Ease(Math.Max(0, fraction))));
         }
 

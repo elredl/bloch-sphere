@@ -42,8 +42,9 @@ namespace Study.Lesson
             public double pauseLength;
             public double scriptedArcStart;       // Cond 1/2: axis appears and arc runs
             public double arcDuration;
-            public double predictionDeadline;     // Cond 3
-            public double rotationDeadline;       // Cond 3: remaining rotation plays scripted
+            public double placementDeadline;      // Cond 3: question 1, place the predicted end state
+            public double predictionDeadline;     // Cond 3: question 2, the chance of measuring 0
+            public double rotationDeadline;       // Cond 3: gate not pressed by now, it plays scripted
             public double timeoutArcMaxDuration;  // Cond 3
             public double measurementDemoStart;   // pause 4 only, all conditions
             public double measurementDemoEnd;
@@ -76,7 +77,12 @@ namespace Study.Lesson
             public string startState;      // checked against the live state at pause onset
             public string gate;
             public string operationLabel;  // Cond 3 gate-press button text
-            public string prediction;      // "p0" (five buttons) or "position" (six markers)
+            // Cond 3 question 1, how a placement is judged: "point" (the exact end state) or
+            // "height" (only the tilt from |0>, for operations whose side the lesson leaves open).
+            public string placementMatch;
+            // Cond 3 question 2 (question 1, placing the end state, needs no data: it is
+            // the gate applied to startState). "p0" (five buttons) or "position" (six markers).
+            public string prediction;
             public string[] choices;
             public string correct;
             public bool measurementDemo;   // pause 4: demo on the post-rotation state
@@ -105,6 +111,7 @@ namespace Study.Lesson
             if (p.rotationDeadline + p.timeoutArcMaxDuration > p.measurementDemoStart)
                 errors.Add("timeout arc can overlap the measurement demo");
             if (p.measurementDemoEnd > p.pauseLength) errors.Add("measurement demo runs past the end of the pause");
+            if (p.placementDeadline <= 0 || p.placementDeadline > p.predictionDeadline) errors.Add("placement deadline must come before the prediction deadline");
             if (p.predictionDeadline > p.rotationDeadline) errors.Add("prediction deadline after rotation deadline");
             if (reprepareDuration <= 0) errors.Add("reprepareDuration must be positive");
 
@@ -162,6 +169,7 @@ namespace Study.Lesson
                 CheckState(task.startState, task.id, errors);
                 CheckGate(task.gate, task.id, errors);
                 if (task.prediction != "p0" && task.prediction != "position") errors.Add($"{task.id}: prediction must be p0 or position");
+                if (task.placementMatch != "point" && task.placementMatch != "height") errors.Add($"{task.id}: placementMatch must be point or height");
                 if (task.choices == null || Array.IndexOf(task.choices, task.correct) < 0) errors.Add($"{task.id}: correct answer not among choices");
                 if (task.measurementDemo && task.demoShots <= 0) errors.Add($"{task.id}: measurement demo needs shots");
             }

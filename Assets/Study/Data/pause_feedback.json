@@ -1,12 +1,15 @@
 {
     "ui": {
+        "placeTitle": "PLACE",
+        "placeHint": "Grab the tip of the dim vector and move it to where the turn will take it, or point at a marker. Then press Lock in.",
+        "lockLabel": "Lock in",
         "predictTitle": "PREDICT",
         "turnTitle": "TURN",
         "positionHint": "Point at a marker on the sphere and pull the trigger.",
         "lockedLine": "Your prediction: {0}",
         "gateHint": "Press the button to apply the turn.",
         "timeoutHint": "Time to apply the turn. Press the button.",
-        "rotateHint": "Grab the tip of the vector and turn it the way the arrow points. Let go when it stops.",
+        "rotateHint": "Watch the turn. The dim vector is your prediction.",
         "correctTitle": "CORRECT",
         "incorrectTitle": "NOT QUITE",
         "neutralTitle": "RESULT"
@@ -15,92 +18,169 @@
     "tasks": [
         {
             "id": "pause1",
+            "placement": {
+                "prompt": "Where will the vector point after a quarter turn toward |1⟩? Place the dim vector there.",
+                "correct": "Right place: a quarter turn reaches the equator.",
+                "noPlacement": "A quarter turn took the vector to the equator.",
+                "genericIncorrect": "A quarter turn takes the vector to the equator.",
+                "misconceptions": [
+                    {
+                        "id": "turn_leaves_vector_in_place",
+                        "answers": ["0"],
+                        "text": "The turn moves the vector down to the equator."
+                    },
+                    {
+                        "id": "quarter_turn_reaches_one",
+                        "answers": ["1"],
+                        "text": "A quarter turn stops at the equator; |1⟩ takes a half turn."
+                    }
+                ]
+            },
             "prompt": "After a quarter turn toward |1⟩, how often will a measurement give 0?",
-            "correct": "Yes, 50%. A quarter turn takes the vector from the top of the sphere to the equator, where 0 and 1 are equally likely.",
-            "noPrediction": "A quarter turn took the vector from |0⟩ at the top to the equator. There, 0 and 1 are equally likely: 50% each.",
-            "genericIncorrect": "It is 50%. The quarter turn brought the vector to the equator, exactly halfway between |0⟩ and |1⟩, so both outcomes are equally likely.",
+            "correct": "Yes, 50%: on the equator, 0 and 1 are equally likely.",
+            "noPrediction": "50%: on the equator, 0 and 1 are equally likely.",
+            "genericIncorrect": "It is 50%: on the equator, 0 and 1 are equally likely.",
             "misconceptions": [
                 {
                     "id": "rotation_does_not_change_outcome",
                     "answers": ["100"],
-                    "text": "It is 50%. The turn did change the state: the vector moved from |0⟩ at the top down to the equator, where 0 and 1 are equally likely."
+                    "text": "It is 50%: the turn moved the vector to the equator."
                 },
                 {
                     "id": "quarter_turn_reaches_one",
                     "answers": ["0"],
-                    "text": "It is 50%. A quarter turn moves the vector only halfway from |0⟩ to |1⟩, to the equator. Reaching |1⟩ takes a half turn."
+                    "text": "It is 50%: a quarter turn stops at the equator, not |1⟩."
                 }
             ]
         },
         {
             "id": "pause2",
-            "prompt": "After a quarter turn about z, where will the vector point?",
-            "correct": "Yes, |+i⟩. A quarter turn about z swings the vector a quarter of the way around the equator, from |+⟩ to |+i⟩.",
-            "noPrediction": "A quarter turn about z swung the vector a quarter of the way around the equator, from |+⟩ to |+i⟩.",
-            "genericIncorrect": "It ends at |+i⟩. A quarter turn about z moves the vector a quarter of the way around the equator, from |+⟩ to |+i⟩.",
+            "placement": {
+                "prompt": "Where will the vector point after S, a quarter turn about z? Place the dim vector there.",
+                "correct": "Right place: S turns |+i⟩ a quarter turn on, to |−⟩.",
+                "noPlacement": "S turned the vector a quarter turn on, from |+i⟩ to |−⟩.",
+                "genericIncorrect": "S turns |+i⟩ a quarter turn around the equator, to |−⟩.",
+                "misconceptions": [
+                    {
+                        "id": "wrong_rotation_direction",
+                        "answers": ["+"],
+                        "text": "Right-hand rule: S turns |+i⟩ on to |−⟩, not back to |+⟩."
+                    },
+                    {
+                        "id": "s_taken_as_half_turn",
+                        "answers": ["-i"],
+                        "text": "S is a quarter turn, so |+i⟩ goes to |−⟩, not |−i⟩."
+                    },
+                    {
+                        "id": "polar_azimuthal_confusion",
+                        "answers": ["0", "1"],
+                        "text": "A turn about z never changes the height; it ends at |−⟩."
+                    },
+                    {
+                        "id": "z_rotation_does_nothing",
+                        "answers": ["+i"],
+                        "text": "|+i⟩ is on the equator, so a turn about z moves it, to |−⟩."
+                    }
+                ]
+            },
+            "prompt": "After S, how often will a measurement give 0?",
+            "correct": "Yes, 50%: S keeps the vector on the equator.",
+            "noPrediction": "50%: S keeps the vector on the equator.",
+            "genericIncorrect": "It is 50%: S keeps the vector on the equator.",
             "misconceptions": [
                 {
-                    "id": "wrong_rotation_direction",
-                    "answers": ["-i"],
-                    "text": "It ends at |+i⟩. Turns follow the right-hand rule: with your thumb along +z, your fingers curl from |+⟩ toward |+i⟩, not toward |−i⟩."
-                },
-                {
                     "id": "polar_azimuthal_confusion",
-                    "answers": ["0", "1"],
-                    "text": "It ends at |+i⟩. A turn about z changes only the angle around the equator, never the height, so the vector cannot move toward |0⟩ or |1⟩."
-                },
-                {
-                    "id": "z_rotation_does_nothing",
-                    "answers": ["+"],
-                    "text": "It ends at |+i⟩. A turn about z leaves |0⟩ and |1⟩ alone because they sit on the z axis, but |+⟩ is on the equator, so it swings around."
+                    "answers": ["100", "0"],
+                    "text": "It is 50%: a turn about z never changes the height."
                 }
             ]
         },
         {
             "id": "pause3",
-            "prompt": "After H, where will the vector point?",
-            "correct": "Yes, |0⟩. H is a half turn about the axis between x and z. It swaps |0⟩ and |+⟩, so it brings |+⟩ back to |0⟩.",
-            "noPrediction": "H is a half turn about the axis between x and z. It swaps |0⟩ and |+⟩, so the vector went from |+⟩ back to |0⟩.",
-            "genericIncorrect": "It ends at |0⟩. H is a half turn about the axis between x and z. It swaps |0⟩ and |+⟩, so it brings |+⟩ back to |0⟩.",
+            "placement": {
+                "prompt": "Where will the vector point after H? Place the dim vector there.",
+                "correct": "Right place: after the Z, H sends |−⟩ to |1⟩.",
+                "noPlacement": "After the Z, H sent |−⟩ to |1⟩, not back to |0⟩.",
+                "genericIncorrect": "H swaps |−⟩ and |1⟩, so it ends at |1⟩.",
+                "misconceptions": [
+                    {
+                        "id": "h_always_undoes_h",
+                        "answers": ["0"],
+                        "text": "H undoes H only with nothing between; after the Z, it gives |1⟩."
+                    },
+                    {
+                        "id": "h_undoes_z",
+                        "answers": ["+"],
+                        "text": "H does not undo Z; it takes |−⟩ to |1⟩."
+                    },
+                    {
+                        "id": "h_leaves_state_unchanged",
+                        "answers": ["-"],
+                        "text": "|−⟩ is not on H's axis, so H moves it, to |1⟩."
+                    }
+                ]
+            },
+            "prompt": "After H, how often will a measurement give 0?",
+            "correct": "Yes, 0%: at |1⟩, every measurement gives 1.",
+            "noPrediction": "0%: at |1⟩, every measurement gives 1.",
+            "genericIncorrect": "It is 0%: at |1⟩, every measurement gives 1.",
             "misconceptions": [
                 {
+                    "id": "h_always_undoes_h",
+                    "answers": ["100"],
+                    "text": "It is 0%: after the Z, H gives |1⟩, not |0⟩."
+                },
+                {
                     "id": "h_always_creates_superposition",
-                    "answers": ["+"],
-                    "text": "It ends at |0⟩. H does not always make a superposition. It is a half turn that swaps |0⟩ and |+⟩, so from |+⟩ it gives |0⟩."
-                },
-                {
-                    "id": "superposition_cannot_become_definite",
-                    "answers": ["-", "+i", "-i"],
-                    "text": "It ends at |0⟩. A superposition can turn back into a definite state: the same H that took |0⟩ to |+⟩ takes |+⟩ back to |0⟩."
-                },
-                {
-                    "id": "h_confused_with_x",
-                    "answers": ["1"],
-                    "text": "It ends at |0⟩. H is not X. X is a half turn about x and swaps |0⟩ and |1⟩. H turns about the axis between x and z and swaps |0⟩ and |+⟩."
+                    "answers": ["50"],
+                    "text": "It is 0%: here H gives |1⟩, not a superposition."
                 }
             ]
         },
         {
             "id": "pause4",
+            "placement": {
+                "prompt": "Where will the vector point after a 60° turn toward |1⟩? Place the dim vector there.",
+                "correct": "Right place: 60° stops above the equator.",
+                "noPlacement": "60° stopped above the equator.",
+                "genericIncorrect": "60° stops above the equator.",
+                "misconceptions": [
+                    {
+                        "id": "turn_leaves_vector_in_place",
+                        "answers": ["0"],
+                        "text": "The turn tips it down from |0⟩."
+                    },
+                    {
+                        "id": "sixty_reaches_equator",
+                        "answers": ["+", "-", "+i", "-i"],
+                        "text": "Too far: the equator is 90°."
+                    },
+                    {
+                        "id": "sixty_reaches_one",
+                        "answers": ["1"],
+                        "text": "Too far: |1⟩ is 180°."
+                    }
+                ]
+            },
             "prompt": "After a 60° turn toward |1⟩, how often will a measurement give 0?",
-            "correct": "Yes, 75%. After a 60° turn the vector is still closer to |0⟩, so 0 comes up 75% of the time, as the measurements showed.",
-            "noPrediction": "After a 60° turn the vector is still closer to |0⟩, so 0 comes up 75% of the time, as the measurements showed.",
-            "genericIncorrect": "It is 75%. After a 60° turn the vector is still closer to |0⟩ than to |1⟩, so 0 is the more likely outcome, as the measurements showed.",
+            "correct": "Yes, 75%, as measured.",
+            "noPrediction": "75%, as measured.",
+            "genericIncorrect": "It is 75%, as measured.",
             "misconceptions": [
                 {
                     "id": "any_superposition_is_50_50",
                     "answers": ["50"],
-                    "text": "It is 75%. Only states on the equator are 50/50. After a 60° turn the vector is still closer to |0⟩, so 0 is more likely."
+                    "text": "75%: only the equator is 50/50."
                 },
                 {
                     "id": "probability_linear_in_angle",
                     "answers": ["67"],
-                    "text": "It is 75%, not 67%. The chance does not fall evenly with the angle. A 60° turn lowers the tip only a quarter of the way down the sphere."
+                    "text": "75%: chance follows height, not angle."
                 },
                 {
                     "id": "only_equator_is_superposition",
                     "answers": ["100"],
-                    "text": "It is 75%. Any tilt away from |0⟩ makes a superposition, not just the equator. After a 60° turn, 1 already comes up 25% of the time."
+                    "text": "75%: any tilt gives some 1s."
                 }
             ]
         }

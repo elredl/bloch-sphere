@@ -236,6 +236,17 @@ namespace Study.EditorTools
             Set(embodied, "arrow", arrow);
             Set(embodied, "grab", grab);
             Set(embodied, "predictionVector", prediction);
+
+            // Condition 3: the measurement segment's free exploration (inactive in Cond 1/2).
+            var sandbox = lessonObject.AddComponent<MeasurementSandbox>();
+            Set(sandbox, "lesson", lesson);
+            Set(sandbox, "state", state);
+            Set(sandbox, "animator", animator);
+            Set(sandbox, "effects", effects);
+            Set(sandbox, "palette", predictionPanel);
+            Set(sandbox, "chart", panel);
+            Set(sandbox, "grab", grab);
+            Set(grab, "sandbox", sandbox);
             Set(embodied, "feedbackJson", AssetDatabase.LoadAssetAtPath<TextAsset>(FeedbackPath));
             Set(director, "embodied", embodied);
             LessonScenePieces.AddEventSystem();

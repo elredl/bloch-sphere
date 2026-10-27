@@ -33,6 +33,9 @@ namespace Study.Lesson
             public double pauseStart; // narration ends, silent pause begins
             public double pauseEnd;   // pause ends, next segment's narration begins
             public string task;       // id of the PauseTask run in this pause
+            // Cond 3 explores freely instead (MeasurementSandbox): its scripted events in this
+            // segment are skipped. The events still define what Cond 1 / 2 see.
+            public bool sandbox;
         }
 
         // Times inside every pause, in seconds from pause onset. One set for all pauses.

@@ -25,6 +25,8 @@ namespace Study.Lesson
         [SerializeField] XRSimpleInteractable interactable;
         [SerializeField] Collider grabCollider;
         [SerializeField] EmbodiedPause pause;
+        [Tooltip("While its segment runs, grabs turn the vector itself (Condition 3's measurement sandbox).")]
+        [SerializeField] MeasurementSandbox sandbox;
         [Tooltip("Wrong-way haptic tick: light and short.")]
         [SerializeField] float tickAmplitude = 0.25f;
         [SerializeField] float tickSeconds = 0.03f;
@@ -69,14 +71,16 @@ namespace Study.Lesson
             Transform hand = holder.transform;
             leverLocal = hand.InverseTransformPoint(transform.position);
             string mode = leverLocal.magnitude <= NearGrabMetres ? "near" : "ray";
-            pause.GrabStarted(mode, HandPoint);
+            if (sandbox != null && sandbox.IsActive) sandbox.GrabStarted(mode, HandPoint);
+            else pause.GrabStarted(mode, HandPoint);
         }
 
         void OnSelectExited(SelectExitEventArgs args)
         {
             if (args.interactorObject != holder) return;
             holder = null;
-            pause.GrabEnded();
+            if (sandbox != null && sandbox.IsActive) sandbox.GrabEnded();
+            else pause.GrabEnded();
         }
 
         // The grab point in Bloch coordinates (sphere center = origin, radius = 1).

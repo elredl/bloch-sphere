@@ -257,7 +257,11 @@ namespace Study.Lesson
                     PauseEnded?.Invoke(index);
                 });
             }
-            foreach (LessonTimeline.LessonEvent e in t.events) Add(e.t, 3, "event " + e.type + " " + e.state + e.gate + e.target, () => Fire(e));
+            foreach (LessonTimeline.LessonEvent e in t.events)
+            {
+                if (Config.ExploresSandbox && InSandbox(e.t)) continue; // MeasurementSandbox runs this stretch instead
+                Add(e.t, 3, "event " + e.type + " " + e.state + e.gate + e.target, () => Fire(e));
+            }
             Add(t.lessonDuration, 4, "lesson end", EndLesson);
             schedule.Sort((a, b) => a.Time != b.Time ? a.Time.CompareTo(b.Time) : a.Order.CompareTo(b.Order));
         }
@@ -270,6 +274,10 @@ namespace Study.Lesson
             if (animator.IsPlaying && animator.ScheduledEnd <= time) animator.Complete();
             if (effects.IsBusy && effects.ScheduledEnd <= time) effects.Complete();
         }
+
+        // Narration part of a sandbox segment (the pause after it is never a sandbox).
+        bool InSandbox(double time) =>
+            Array.Exists(Timeline.segments, s => s.sandbox && time >= s.start && time < s.pauseStart);
 
         void Add(double time, int order, string label, Action fire) =>
             schedule.Add(new ScheduledItem { Time = time, Order = order, Label = label, Fire = fire });

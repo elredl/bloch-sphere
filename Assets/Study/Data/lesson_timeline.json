@@ -18,7 +18,7 @@
         { "id": "qubit_on_sphere", "start": 0.0,   "pauseStart": 150.0, "pauseEnd": 210.0, "task": "pause1" },
         { "id": "gates_are_turns", "start": 210.0, "pauseStart": 390.0, "pauseEnd": 450.0, "task": "pause2" },
         { "id": "undo_and_combine","start": 450.0, "pauseStart": 630.0, "pauseEnd": 690.0, "task": "pause3" },
-        { "id": "measurement",     "start": 690.0, "pauseStart": 840.0, "pauseEnd": 900.0, "task": "pause4" }
+        { "id": "measurement",     "start": 690.0, "pauseStart": 840.0, "pauseEnd": 900.0, "task": "pause4", "sandbox": true }
     ],
 
     "events": [

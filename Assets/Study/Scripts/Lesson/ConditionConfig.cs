@@ -17,6 +17,9 @@ namespace Study.Lesson
     //   prediction prompt  no        no        yes
     //   feedback           no        no        yes
     //   pause dimming      no        no        yes
+    //   explore segment    no        no        yes   (a "sandbox" segment: free gates,
+    //                                                  turning and measuring instead of
+    //                                                  the segment's scripted events)
     public sealed class ConditionConfig
     {
         public readonly Condition Condition;
@@ -31,6 +34,7 @@ namespace Study.Lesson
         public bool ShowsPredictionPrompt => Condition == Condition.EmbodiedVR;
         public bool ShowsFeedback => Condition == Condition.EmbodiedVR;
         public bool DimsAtPauses => Condition == Condition.EmbodiedVR;
+        public bool ExploresSandbox => Condition == Condition.EmbodiedVR;
 
         // Set once per session (the launch screen does this from allocation.csv in
         // Checkpoint 6). Null until then; the lesson falls back to its dev setting.

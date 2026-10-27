@@ -282,7 +282,8 @@ namespace Study.Lesson
         void Log(string type, string fields) =>
             StudyEvents.Log(lesson.Time, type, $"pause={PauseNumber} {fields}".TrimEnd());
 
-        static Qubit QubitAt(BlochVector direction) =>
+        // The state whose Bloch vector points along a unit direction (also used by MeasurementSandbox).
+        internal static Qubit QubitAt(BlochVector direction) =>
             Qubit.FromBlochAngles(Math.Acos(Math.Max(-1, Math.Min(1, direction.Z))), Math.Atan2(direction.Y, direction.X));
 
         // How an answer reads on screen: "50%" for P(0) tasks, "|+i⟩" for positions.

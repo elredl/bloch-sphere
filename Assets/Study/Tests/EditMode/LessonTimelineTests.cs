@@ -138,8 +138,17 @@ namespace Study.Tests
                 Assert.IsFalse(c.ShowsPredictionPrompt);
                 Assert.IsFalse(c.ShowsFeedback);
                 Assert.IsFalse(c.DimsAtPauses);
+                Assert.IsFalse(c.ExploresSandbox);
             }
-            Assert.IsTrue(c3.LearnerRotates && c3.ShowsPredictionPrompt && c3.ShowsFeedback && c3.DimsAtPauses);
+            Assert.IsTrue(c3.LearnerRotates && c3.ShowsPredictionPrompt && c3.ShowsFeedback && c3.DimsAtPauses && c3.ExploresSandbox);
+        }
+
+        [Test]
+        public void RealTimeline_OnlyTheMeasurementSegmentIsASandbox()
+        {
+            LessonTimeline t = Load();
+            for (int i = 0; i < t.segments.Length; i++)
+                Assert.AreEqual(t.segments[i].id == "measurement", t.segments[i].sandbox, t.segments[i].id);
         }
     }
 }

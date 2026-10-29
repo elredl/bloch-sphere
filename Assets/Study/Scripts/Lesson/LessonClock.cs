@@ -40,10 +40,12 @@ namespace Study.Lesson
         // Raw audio position. Used for the pacing report.
         public double AudioTime => IsFrameClock ? time : source.clip == null ? 0 : source.timeSamples / (double)source.clip.frequency;
 
-        // Editor only: jump the frame clock forward (the audio clock follows source.time instead).
-        public void DevSeek(double seconds)
+        // Jump forward to a time the audio was just moved to (a skipped pause, an Editor seek).
+        // Never backwards. The audio clock would snap there by itself on the next Tick; setting
+        // it here means items due at that time fire on the very next frame.
+        public void Jump(double seconds)
         {
-            if (IsFrameClock && seconds > time) time = seconds;
+            if (seconds > time) time = seconds;
         }
 
         public bool Finished => finished;
@@ -71,7 +73,7 @@ namespace Study.Lesson
             {
                 if (time > 0 && time >= source.clip.length - EndWindow)
                 {
-                    time = source.clip.length;
+                    time = System.Math.Max(time, source.clip.length); // a skip may already be past the clip's end
                     finished = true;
                 }
                 return;

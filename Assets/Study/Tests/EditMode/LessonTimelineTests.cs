@@ -129,14 +129,7 @@ namespace Study.Tests
             var c2 = new ConditionConfig(Condition.PassiveVR);
             var c3 = new ConditionConfig(Condition.EmbodiedVR);
             Assert.IsFalse(c1.UsesHeadset); Assert.IsTrue(c2.UsesHeadset); Assert.IsTrue(c3.UsesHeadset);
-            foreach (var c in new[] { c1, c2 })
-            {
-                Assert.IsFalse(c.LearnerRotates);
-                Assert.IsFalse(c.ShowsPredictionPrompt);
-                Assert.IsFalse(c.ShowsFeedback);
-                Assert.IsFalse(c.DimsAtPauses);
-            }
-            Assert.IsTrue(c3.LearnerRotates && c3.ShowsPredictionPrompt && c3.ShowsFeedback && c3.DimsAtPauses);
+            Assert.IsFalse(c1.LearnerRotates); Assert.IsFalse(c2.LearnerRotates); Assert.IsTrue(c3.LearnerRotates);
         }
     }
 }

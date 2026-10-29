@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace Study.Lesson
 {
-    // Development only: plays a Condition 3 learner through each pause so the whole
+    // Development only: plays a learner through each pause (in Cond 1/2 only the answer
+    // applies; there is nothing to press or grab) so the whole
     // flow (prediction, gate press, ratchet grab, timeouts, feedback) can be run in
     // the Editor without a headset. It uses the same entry points as the real
     // controls: the panel and marker pick handlers, the gate button, and a grab

@@ -14,9 +14,10 @@ namespace Study.Lesson
     //                      Cond 1    Cond 2    Cond 3
     //   display            desktop   Quest 3   Quest 3
     //   learner rotates    no        no        yes
-    //   prediction prompt  no        no        yes
-    //   feedback           no        no        yes
-    //   pause dimming      no        no        yes
+    //
+    // Prediction prompts, feedback and pause dimming are the same in every
+    // condition, so they have no switch here: the only manipulations are the
+    // display and whether the learner turns the qubit by hand.
     public sealed class ConditionConfig
     {
         public readonly Condition Condition;
@@ -28,9 +29,6 @@ namespace Study.Lesson
 
         public bool UsesHeadset => Condition != Condition.Desktop2D;
         public bool LearnerRotates => Condition == Condition.EmbodiedVR;
-        public bool ShowsPredictionPrompt => Condition == Condition.EmbodiedVR;
-        public bool ShowsFeedback => Condition == Condition.EmbodiedVR;
-        public bool DimsAtPauses => Condition == Condition.EmbodiedVR;
 
         // Set once per session (the launch screen does this from allocation.csv in
         // Checkpoint 6). Null until then; the lesson falls back to its dev setting.

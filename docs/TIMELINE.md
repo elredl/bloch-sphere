@@ -49,14 +49,14 @@ drift from the narration.
 
 | field | meaning |
 |---|---|
-| `scriptedArcStart`, `arcDuration` | Cond 1/2: axis appears and the arc plays. Move to the dry-run median Cond 3 completion time, then freeze. |
-| `predictionDeadline` | Cond 3: unanswered prompt removed, gate unlocks |
+| `arcDuration` | Cond 1/2: length of the scripted arc, which starts 1 s (`EmbodiedPause.WatchDelay`) after the prediction locks or times out |
+| `predictionDeadline` | All: unanswered prompt removed (Cond 3: gate unlocks; Cond 1/2: arc plays) |
 | `rotationDeadline`, `timeoutArcMaxDuration` | Cond 3: the remaining rotation plays as a scripted arc |
 | `measurementDemoStart`, `measurementDemoEnd` | pause 4 demo, all conditions |
 
-## Condition 3 prompts and feedback
+## Prompts and feedback (all conditions)
 
-The prompt, feedback and panel text for Condition 3 live in
+The prompt, feedback and panel text live in
 `Assets/Study/Data/pause_feedback.json`, one entry per pause task (matched by
 `id`). Answers use the same strings as the task's `choices`. Each wrong answer
 can appear in at most one misconception; unmapped wrong answers get

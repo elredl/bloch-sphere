@@ -20,10 +20,12 @@ namespace Study.Lesson
             public string predictTitle;
             public string turnTitle;     // once the prediction is over: gate button, grab
             public string positionHint;
+            public string positionHintDesktop; // Cond 1: mouse instead of controller
             public string lockedLine;   // {0} = the learner's answer
             public string gateHint;
             public string timeoutHint;
             public string rotateHint;
+            public string watchHint;     // Cond 1/2: while the scripted arc plays
             public string correctTitle;
             public string incorrectTitle;
             public string neutralTitle;
@@ -86,8 +88,8 @@ namespace Study.Lesson
         {
             var errors = new List<string>();
             if (ui == null || tasks == null) { errors.Add("missing ui or tasks"); return errors; }
-            foreach (string field in new[] { ui.predictTitle, ui.turnTitle, ui.positionHint, ui.lockedLine, ui.gateHint, ui.timeoutHint,
-                         ui.rotateHint, ui.correctTitle, ui.incorrectTitle, ui.neutralTitle })
+            foreach (string field in new[] { ui.predictTitle, ui.turnTitle, ui.positionHint, ui.positionHintDesktop, ui.lockedLine, ui.gateHint, ui.timeoutHint,
+                         ui.rotateHint, ui.watchHint, ui.correctTitle, ui.incorrectTitle, ui.neutralTitle })
                 if (string.IsNullOrWhiteSpace(field)) errors.Add("a ui text is empty");
             foreach (LessonTimeline.PauseTask task in timeline.pauseTasks)
             {

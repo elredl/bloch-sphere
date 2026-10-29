@@ -100,6 +100,8 @@ namespace Study.Session
                 foreach (XRInputSubsystem s in inputSubsystems) s.trackingOriginUpdated += OnTrackingOriginUpdated;
             }
             lesson.LessonEnded += OnLessonEnded;
+            lesson.PauseStarted += OnPauseStarted;
+            lesson.PauseEnded += OnPauseEnded;
             orientation.Finished += StartLesson;
             overlay.Hide();
             sphere.SetActive(false);
@@ -133,7 +135,12 @@ namespace Study.Session
 
         void OnDestroy()
         {
-            if (lesson != null) lesson.LessonEnded -= OnLessonEnded;
+            if (lesson != null)
+            {
+                lesson.LessonEnded -= OnLessonEnded;
+                lesson.PauseStarted -= OnPauseStarted;
+                lesson.PauseEnded -= OnPauseEnded;
+            }
             if (orientation != null) orientation.Finished -= StartLesson;
             foreach (XRInputSubsystem s in inputSubsystems) s.trackingOriginUpdated -= OnTrackingOriginUpdated;
         }
@@ -218,9 +225,21 @@ namespace Study.Session
             if (step == Step.End) return;
             step = Step.Lesson;
             sphere.SetActive(true);
-            SetInteractors(lesson.Config.LearnerRotates);
-            if (!lesson.Config.UsesHeadset) DesktopDisplay.SetCursorHidden(true); // spec: no mouse during the lesson
+            ApplyLessonPointer();
             lesson.Begin();
+        }
+
+        // The Next button needs a pointer in every pause: the controller rays (Cond 2 has
+        // them only then) or the mouse (Cond 1 hides it while the narration plays).
+        void OnPauseStarted(int index, LessonTimeline.Segment segment, LessonTimeline.PauseTask task, double onset) => ApplyLessonPointer();
+
+        void OnPauseEnded(int index) => ApplyLessonPointer();
+
+        void ApplyLessonPointer()
+        {
+            if (step != Step.Lesson || OnBreak) return;
+            SetInteractors(lesson.Config.LearnerRotates || lesson.InPause);
+            if (!lesson.Config.UsesHeadset) DesktopDisplay.SetCursorHidden(!lesson.InPause);
         }
 
         void OnLessonEnded()
@@ -361,7 +380,8 @@ namespace Study.Session
                 Time.timeScale = timeScaleBeforeBreak;
                 orientation.SetPaused(false);
             }
-            SetInteractors(step == Step.Orientation ? headset : lesson.Config.LearnerRotates);
+            if (step == Step.Lesson) ApplyLessonPointer();
+            else SetInteractors(headset);
         }
 
         // ---- overlay: calibration, ready, break and the abort hold ----

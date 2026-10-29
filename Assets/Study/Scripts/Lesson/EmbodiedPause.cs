@@ -5,22 +5,32 @@ using UnityEngine;
 
 namespace Study.Lesson
 {
-    // Condition 3 inside a pause, driven by PauseDirector with pause-relative time:
+    // Every condition inside a pause, driven by PauseDirector with pause-relative time.
+    // The prediction and the feedback are the same in all three conditions; only the
+    // turn in between differs (Cond 3 turns the qubit by hand, Cond 1/2 watch it):
     //
     //   0 s       prompt (panel; for position tasks also the six sphere markers)
-    //   answer    first answer locks, prediction_response logged, gate button appears
-    //   25 s      no answer: prompt removed, prediction_timeout, gate button appears anyway
+    //   answer    first answer locks, prediction_response logged
+    //   25 s      no answer: prompt removed, prediction_timeout
+    //   Cond 1/2  WatchDelay after the lock (or the timeout) the scripted arc plays
+    //   Cond 3    gate button appears once the prediction is over
     //   press     gate_press: axis and direction arrow show, the grab unlocks
     //   grab      ratchet rotation about the gate axis; release within tolerance completes
     //             and the vector eases to the exact gate result
     //   35 s      not done: the remaining rotation plays as a scripted arc, rotation_timeout
     //   done      feedback until 60 s (pause 4: panel hidden through the demo, feedback from 51 s)
     //
+    // (The name is historical: this used to run in Condition 3 only.)
+    //
     // Every path applies the same gate, so the pause always ends in the same state
     // as in the other conditions, and nothing here changes when the pause ends.
     public class EmbodiedPause : MonoBehaviour
     {
-        public enum Phase { Idle, Predict, Gate, Rotate, Finishing, Done }
+        public enum Phase { Idle, Predict, Gate, Watch, Rotate, Finishing, Done }
+
+        // Cond 1/2: seconds between the prediction locking (or timing out) and the scripted
+        // arc, so the locked answer reads before the vector moves.
+        public const double WatchDelay = 1.0;
 
         [SerializeField] LessonController lesson;
         [SerializeField] GateArcAnimator animator;
@@ -49,6 +59,7 @@ namespace Study.Lesson
         RatchetRotation ratchet;
         Func<BlochVector> hand;
         bool feedbackShown;
+        double watchAt; // Cond 1/2: pause-relative time the scripted arc starts
 
         void Awake()
         {
@@ -89,7 +100,8 @@ namespace Study.Lesson
             PauseFeedback.TaskText text = feedback.Task(task.id);
             bool position = task.prediction == "position";
             string[] labels = position ? null : Array.ConvertAll(task.choices, c => AnswerText(task, c));
-            panel.ShowPrediction(feedback.ui.predictTitle, text.prompt, task.choices, labels, position ? feedback.ui.positionHint : null);
+            string positionHint = lesson.Config.UsesHeadset ? feedback.ui.positionHint : feedback.ui.positionHintDesktop;
+            panel.ShowPrediction(feedback.ui.predictTitle, text.prompt, task.choices, labels, position ? positionHint : null);
             if (position) markers.Show();
             grab.SetGrabbable(false);
         }
@@ -107,6 +119,7 @@ namespace Study.Lesson
             }
 
             if (phase == Phase.Predict && since >= p.predictionDeadline) TimeOutPrediction(p);
+            if (phase == Phase.Watch && since >= watchAt) PlayScriptedArc(p);
             if ((phase == Phase.Gate || phase == Phase.Rotate) && since >= p.rotationDeadline) TimeOutRotation(p);
             if (phase == Phase.Finishing && !animator.IsPlaying) phase = Phase.Done;
             if (phase == Phase.Done && !feedbackShown && (!task.measurementDemo || since >= p.measurementDemoEnd)) ShowFeedback();
@@ -130,7 +143,8 @@ namespace Study.Lesson
             Log("prediction_response", $"answer={picked} rt={SincePause:F3}");
             markers.Hide();
             panel.LockChoice(picked, string.Format(feedback.ui.lockedLine, AnswerText(task, picked)));
-            EnterGate(feedback.ui.gateHint);
+            if (lesson.Config.LearnerRotates) EnterGate(feedback.ui.gateHint);
+            else EnterWatch(SincePause);
         }
 
         void TimeOutPrediction(LessonTimeline.PauseSchedule p)
@@ -139,7 +153,25 @@ namespace Study.Lesson
             lesson.Record($"pause{PauseNumber} prediction timeout", onset + p.predictionDeadline);
             markers.Hide();
             panel.RemovePrompt(feedback.ui.turnTitle);
-            EnterGate(feedback.ui.timeoutHint);
+            if (lesson.Config.LearnerRotates) EnterGate(feedback.ui.timeoutHint);
+            else EnterWatch(p.predictionDeadline);
+        }
+
+        // Cond 1/2: no gate button and no grab; the turn plays by itself.
+        void EnterWatch(double predictionOver)
+        {
+            phase = Phase.Watch;
+            watchAt = predictionOver + WatchDelay;
+        }
+
+        void PlayScriptedArc(LessonTimeline.PauseSchedule p)
+        {
+            double scheduled = onset + watchAt;
+            phase = Phase.Finishing;
+            if (task.measurementDemo) panel.Hide(); // nothing to say until the demo has run
+            else panel.ShowRotateHint(feedback.ui.turnTitle, feedback.ui.watchHint);
+            lesson.Record($"pause{PauseNumber} scripted arc", scheduled);
+            animator.Play(Gate.FromName(task.gate), p.arcDuration, scheduled);
         }
 
         void EnterGate(string hintText)

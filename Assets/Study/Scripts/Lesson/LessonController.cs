@@ -12,6 +12,9 @@ namespace Study.Lesson
     // All timing comes from LessonClock (the audio position), never from frame
     // counting, so pacing cannot drift from the narration. The same schedule
     // runs in every condition; only PauseDirector behaves differently.
+    // The learner can end a pause early with Next (SkipPause): the narration
+    // jumps to the pause's end, so lesson time skips ahead and real time on
+    // task varies. Every skip is logged.
     // Runs first so Config is set before any other component's Awake reads it.
     [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(AudioSource))]
@@ -45,6 +48,9 @@ namespace Study.Lesson
         public double Time => clock != null ? clock.Time : 0;
         public bool IsRunning => running;
         public bool OnBreak { get; private set; }
+        // Index of the pause in progress, -1 during narration.
+        public int CurrentPause { get; private set; } = -1;
+        public bool InPause => CurrentPause >= 0;
 #if UNITY_EDITOR
         public float DevPlaybackSpeed => devPlaybackSpeed;
 #else
@@ -61,6 +67,8 @@ namespace Study.Lesson
         bool started; // narration has started (lesson time exists), until the lesson ends or is aborted
         readonly StringBuilder report = new StringBuilder();
         double maxLateness;
+        bool skipRequested;
+        double skippedTotal; // lesson seconds of pause skipped with Next
 
         struct ScheduledItem
         {
@@ -192,6 +200,8 @@ namespace Study.Lesson
             if (OnBreak) UnityEngine.Time.timeScale = timeScaleBeforeBreak;
             OnBreak = false;
             started = false;
+            skipRequested = false;
+            CurrentPause = -1;
             Debug.Log($"[Lesson] {Config} aborted at lesson time {LessonTimeline.Seconds(clock.Time)}");
         }
 
@@ -200,6 +210,7 @@ namespace Study.Lesson
             if (!running) return;
             clock.Tick(UnityEngine.Time.unscaledDeltaTime, OnBreak);
             if (OnBreak) return;
+            if (skipRequested) ApplySkip();
             while (nextItem < schedule.Count && schedule[nextItem].Time <= clock.Time)
             {
                 ScheduledItem item = schedule[nextItem++];
@@ -209,13 +220,44 @@ namespace Study.Lesson
             }
         }
 
+        // Next button: end the current pause now. Applied at the start of the next Update,
+        // so the pause offset fires before anything else (PauseDirector) sees the new time.
+        public bool SkipPause()
+        {
+            if (!running || OnBreak || !InPause) return false;
+            skipRequested = true;
+            return true;
+        }
+
+        void ApplySkip()
+        {
+            skipRequested = false;
+            if (!InPause) return;
+            LessonTimeline.Segment s = Timeline.segments[CurrentPause];
+            double remaining = s.pauseEnd - clock.Time;
+            if (remaining <= 0) return;
+            skippedTotal += remaining;
+            Record($"pause{CurrentPause + 1} skipped", clock.Time);
+            StudyEvents.Log(clock.Time, "pause_skipped",
+                $"pause={CurrentPause + 1} in_pause={clock.Time - s.pauseStart:F3} skipped={remaining:F3}");
+            SeekTo(s.pauseEnd);
+        }
+
+        // Moves the narration and lesson time forward. Everything scheduled up to the new
+        // time fires in order on this frame, as after a hitch.
+        void SeekTo(double seconds)
+        {
+            // The last pause ends the clip: stop the audio rather than seek past its end.
+            if (seconds >= narration.length - 0.01) source.Stop();
+            else if (!clock.IsFrameClock) source.time = (float)seconds;
+            clock.Jump(seconds);
+        }
+
 #if UNITY_EDITOR
         // Editor only: jump the narration forward to take screenshots of late moments.
-        // Everything scheduled before the new time fires in order, as after a hitch.
         public void DevSeek(double seconds)
         {
-            source.time = (float)seconds;
-            clock.DevSeek(seconds);
+            SeekTo(seconds);
             Debug.LogWarning($"[Lesson] Dev seek to {seconds:F1}s (Editor only).");
         }
 #endif
@@ -249,11 +291,13 @@ namespace Study.Lesson
                 {
                     StudyEvents.Log(clock.Time, "pause_onset", $"pause={index + 1} task={task.id} scheduled={s.pauseStart:F3}");
                     CheckLiveStartState(index, task);
+                    CurrentPause = index;
                     PauseStarted?.Invoke(index, s, task, s.pauseStart);
                 });
                 Add(s.pauseEnd, 0, $"pause{index + 1} offset", () =>
                 {
                     StudyEvents.Log(clock.Time, "pause_offset", $"pause={index + 1} scheduled={s.pauseEnd:F3}");
+                    CurrentPause = -1;
                     PauseEnded?.Invoke(index);
                 });
             }
@@ -330,7 +374,7 @@ namespace Study.Lesson
         void EndLesson()
         {
             running = false;
-            StudyEvents.Log(clock.Time, "lesson_end", $"max_late_ms={maxLateness * 1000:F1}");
+            StudyEvents.Log(clock.Time, "lesson_end", $"max_late_ms={maxLateness * 1000:F1} skipped_s={skippedTotal:F3}");
             started = false;
             float realSeconds = UnityEngine.Time.realtimeSinceStartup - realStartTime;
             var pauses = new StringBuilder();
@@ -339,7 +383,7 @@ namespace Study.Lesson
             Debug.Log(report.ToString());
             Debug.Log($"[Pacing] {Config} SUMMARY lessonTime={LessonTimeline.Seconds(clock.Time)} " +
                       $"scheduledTotal={LessonTimeline.Seconds(Timeline.lessonDuration)} pauses={pauses}" +
-                      $"maxLateness={maxLateness * 1000:F1}ms real={realSeconds:F1}s at {devSpeedForReport}x");
+                      $"maxLateness={maxLateness * 1000:F1}ms skipped={skippedTotal:F1}s real={realSeconds:F1}s at {devSpeedForReport}x");
             LessonEnded?.Invoke();
         }
     }

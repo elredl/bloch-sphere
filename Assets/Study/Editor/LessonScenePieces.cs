@@ -91,7 +91,7 @@ namespace Study.EditorTools
             return target;
         }
 
-        // Condition 3 prompt and feedback panel, upper left of the sphere: the histogram
+        // Prompt and feedback panel (all conditions), upper left of the sphere: the histogram
         // panel's mirror image. Canvas units are mm. 240 x 270 mm:
         //   title 240-262, body from 36 below the top, answer row 100-134,
         //   hint 56-94, gate button 12-50 (feedback: body down to 48, answer line 12-40).
@@ -101,7 +101,7 @@ namespace Study.EditorTools
             var canvasObject = new GameObject("Prediction Panel", typeof(RectTransform));
             var canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
-            canvasObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+            canvasObject.AddComponent<PointerSupport>(); // controller ray, or the mouse in Condition 1
             var group = canvasObject.AddComponent<CanvasGroup>();
             var rect = (RectTransform)canvasObject.transform;
             rect.sizeDelta = new Vector2(W, H);
@@ -157,7 +157,7 @@ namespace Study.EditorTools
             so.FindProperty("gateLabel").objectReferenceValue = gateLabel;
             so.ApplyModifiedProperties();
             view.ApplyStyle();
-            group.alpha = 0; // hidden until a Condition 3 pause
+            group.alpha = 0; // hidden until a pause
             group.interactable = false;
             group.blocksRaycasts = false;
             return view;
@@ -230,6 +230,41 @@ namespace Study.EditorTools
             so.ApplyModifiedProperties();
             view.ApplyStyle();
             group.alpha = 0; // hidden until a demo starts
+            return view;
+        }
+
+        // Next button, right of the sphere below the histogram panel, inside the same free band
+        // of the desktop frame. Shown during every pause in all conditions. Canvas units are mm.
+        public static NextButtonView AddNextButton(StylePalette palette, Vector3 sphereCenter, Vector3 eye)
+        {
+            const float W = 120, H = 44;
+            var canvasObject = new GameObject("Next Button", typeof(RectTransform));
+            var canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvasObject.AddComponent<PointerSupport>(); // controller ray or mouse, whichever this session has
+            var group = canvasObject.AddComponent<CanvasGroup>();
+            var rect = (RectTransform)canvasObject.transform;
+            rect.sizeDelta = new Vector2(W, H);
+            rect.localScale = Vector3.one * 0.001f;
+            rect.position = sphereCenter + new Vector3(0.36f, -0.06f, -0.25f);
+            rect.rotation = Quaternion.LookRotation(rect.position - eye);
+
+            var (button, frame, fill, label) = PanelButton(rect, "Button", 0, 0, W, H, 18);
+            label.text = "NEXT";
+
+            var view = canvasObject.AddComponent<NextButtonView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("palette").objectReferenceValue = palette;
+            so.FindProperty("group").objectReferenceValue = group;
+            so.FindProperty("button").objectReferenceValue = button;
+            so.FindProperty("frame").objectReferenceValue = frame;
+            so.FindProperty("fill").objectReferenceValue = fill;
+            so.FindProperty("label").objectReferenceValue = label;
+            so.ApplyModifiedProperties();
+            view.ApplyStyle();
+            group.alpha = 0; // hidden until a pause
+            group.interactable = false;
+            group.blocksRaycasts = false;
             return view;
         }
 

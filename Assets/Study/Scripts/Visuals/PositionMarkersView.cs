@@ -4,11 +4,10 @@ using Study.Quantum;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace Study.Visuals
 {
-    // Condition 3 "where will the vector point?" answers: six glowing, labeled
+    // The "where will the vector point?" answers (all conditions): six glowing, labeled
     // rings on the sphere at |0>, |1>, |+>, |->, |+i>, |-i>. Each ring takes the
     // color of its axis and its own ket label at full brightness (the sphere's
     // labels are dimmed in the pause). The learner points a controller ray at one and pulls the
@@ -115,8 +114,7 @@ namespace Study.Visuals
             rect.sizeDelta = new Vector2(HitSizeMm, HitSizeMm);
             rect.localScale = Vector3.one * 0.001f;
             go.AddComponent<Canvas>().renderMode = RenderMode.WorldSpace;
-            var raycaster = go.AddComponent<TrackedDeviceGraphicRaycaster>();
-            raycaster.ignoreReversedGraphics = false;
+            PointerSupport.Add(go); // controller ray, or the mouse in Condition 1
 
             var image = new GameObject("Area", typeof(RectTransform), typeof(Image));
             var imageRect = (RectTransform)image.transform;

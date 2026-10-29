@@ -4,7 +4,6 @@
 
     "pauseSchedule": {
         "pauseLength": 60.0,
-        "scriptedArcStart": 15.0,
         "arcDuration": 3.0,
         "predictionDeadline": 25.0,
         "rotationDeadline": 35.0,

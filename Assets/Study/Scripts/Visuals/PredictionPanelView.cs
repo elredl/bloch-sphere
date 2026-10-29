@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Study.Visuals
 {
-    // Condition 3 panel, upper left of the sphere (the histogram's mirror image):
+    // Prediction panel (all conditions), upper left of the sphere (the histogram's mirror image):
     // the prediction prompt, the five P(0) buttons, the gate button, the rotation
     // hint and the feedback. Built by the editor scene setup; this only switches
     // what is shown and styles it from the palette. Neon on frames and accents

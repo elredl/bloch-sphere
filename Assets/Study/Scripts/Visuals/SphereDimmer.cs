@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Study.Visuals
 {
-    // Condition 3 pause dimming: the sphere drops to the palette's dim factor
+    // Pause dimming (all conditions): the sphere drops to the palette's dim factor
     // (about 30 %) while the state vector, gate axis and trail stay at full
     // brightness, so attention goes to what the learner is about to move.
     // Fades slowly; never a flash.

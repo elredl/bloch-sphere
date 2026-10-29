@@ -140,6 +140,16 @@ namespace Study.EditorTools
             return "seek " + arg;
         }
 
+        // Play Mode: the same path as clicking Next in a pause.
+        public static string PressNext(string arg)
+        {
+            var next = Object.FindAnyObjectByType<NextButtonView>();
+            var lesson = Object.FindAnyObjectByType<LessonController>();
+            bool visible = next.IsVisible;
+            next.Press();
+            return $"next pressed (visible={visible}) at lessonTime={lesson.Time:F2} pause={lesson.CurrentPause}";
+        }
+
         // Play Mode. arg = "lessonTime,camera,path;lessonTime,camera,path;..." Each capture is
         // taken on the first frame at or after its lesson time, so short moments (a 150 ms
         // flash) can be caught exactly.

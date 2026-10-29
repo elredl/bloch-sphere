@@ -215,8 +215,11 @@ namespace Study.EditorTools
             Set(director, "animator", animator);
             Set(director, "dimmer", sphere.GetComponent<SphereDimmer>());
             Set(director, "demo", demo);
+            var nextButton = LessonScenePieces.AddNextButton(palette, SphereCenter, DefaultEye);
+            nextButton.transform.SetParent(stage.transform, true);
+            Set(director, "nextButton", nextButton);
 
-            // Condition 3: prompt/feedback panel, markers, arrow and the grab (inactive in Cond 1/2).
+            // Prompt/feedback panel and markers (all conditions); arrow and grab (Condition 3 only).
             var predictionPanel = LessonScenePieces.AddPredictionPanel(palette, SphereCenter, DefaultEye);
             predictionPanel.transform.SetParent(stage.transform, true);
             var embodied = lessonObject.AddComponent<EmbodiedPause>();

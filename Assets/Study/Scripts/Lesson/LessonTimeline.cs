@@ -40,8 +40,7 @@ namespace Study.Lesson
         public class PauseSchedule
         {
             public double pauseLength;
-            public double scriptedArcStart;       // Cond 1/2: axis appears and arc runs
-            public double arcDuration;
+            public double arcDuration;            // Cond 1/2: the scripted arc after the prediction
             public double predictionDeadline;     // Cond 3
             public double rotationDeadline;       // Cond 3: remaining rotation plays scripted
             public double timeoutArcMaxDuration;  // Cond 3
@@ -101,7 +100,8 @@ namespace Study.Lesson
             if (segments == null || events == null || pauseTasks == null) { errors.Add("missing segments, events or pauseTasks"); return errors; }
 
             PauseSchedule p = pauseSchedule;
-            if (p.scriptedArcStart + p.arcDuration > p.pauseLength) errors.Add("scripted arc runs past the end of the pause");
+            if (p.predictionDeadline + EmbodiedPause.WatchDelay + p.arcDuration > p.measurementDemoStart)
+                errors.Add("Cond 1/2 arc after an unanswered prediction can overlap the measurement demo");
             if (p.rotationDeadline + p.timeoutArcMaxDuration > p.measurementDemoStart)
                 errors.Add("timeout arc can overlap the measurement demo");
             if (p.measurementDemoEnd > p.pauseLength) errors.Add("measurement demo runs past the end of the pause");

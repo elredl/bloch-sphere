@@ -8,11 +8,15 @@ namespace Study.Lesson
     // LessonController (identical in every condition); this only decides what
     // fills it, using the pause-relative times in the timeline's pauseSchedule.
     //
-    //   Cond 1 / 2: at scriptedArcStart the gate axis appears and the arc plays.
-    //   Cond 3:     sphere dims at onset; EmbodiedPause runs the prediction,
-    //               gate press, grab and feedback, with the timeout arc at
-    //               rotationDeadline. Either way the end state is the same.
+    //   All:        sphere dims at onset; EmbodiedPause runs the prediction and
+    //               the feedback. In between, Cond 3 presses the gate and turns
+    //               the qubit (timeout arc at rotationDeadline) and Cond 1/2
+    //               watch the scripted arc. Either way the end state is the same.
     //   All:        pause 4 runs the measurement demo at measurementDemoStart.
+    //               The Next button shows once the prediction is over (answered
+    //               or timed out), so nobody skips the question; pressing it ends
+    //               the pause early (whatever has not run yet is skipped, and the
+    //               operation snaps to its result so the end state is the same).
     //   Nothing else is shown in Cond 1 / 2: no dimming, no prompt, no cues.
     public class PauseDirector : MonoBehaviour
     {
@@ -21,23 +25,36 @@ namespace Study.Lesson
         [SerializeField] SphereDimmer dimmer;
         [SerializeField] MeasurementDemo demo;
         [SerializeField] EmbodiedPause embodied;
+        [SerializeField] NextButtonView nextButton;
 
         LessonTimeline.PauseTask task;
         int pauseIndex = -1;
         double onset;
         bool arcDone;
         bool demoDone;
+        bool skipped;
 
         void OnEnable()
         {
             lesson.PauseStarted += OnPauseStarted;
             lesson.PauseEnded += OnPauseEnded;
+            nextButton.Pressed += OnNextPressed;
         }
 
         void OnDisable()
         {
             lesson.PauseStarted -= OnPauseStarted;
             lesson.PauseEnded -= OnPauseEnded;
+            if (nextButton == null) return; // scene teardown
+            nextButton.Pressed -= OnNextPressed;
+            nextButton.Hide(); // an aborted lesson leaves no button behind
+        }
+
+        void OnNextPressed()
+        {
+            if (pauseIndex < 0 || !lesson.SkipPause()) return;
+            skipped = true;
+            nextButton.Hide();
         }
 
         void OnPauseStarted(int index, LessonTimeline.Segment segment, LessonTimeline.PauseTask pauseTask, double pauseOnset)
@@ -47,40 +64,37 @@ namespace Study.Lesson
             onset = pauseOnset;
             arcDone = false;
             demoDone = !task.measurementDemo;
-            if (lesson.Config.DimsAtPauses) dimmer.SetDimmed(true);
-            if (lesson.Config.LearnerRotates)
-            {
-                if (index == 0) embodied.Validate(lesson.Timeline);
-                embodied.Begin(index, task, pauseOnset);
-            }
+            skipped = false;
+            dimmer.SetDimmed(true);
+            if (index == 0) embodied.Validate(lesson.Timeline);
+            embodied.Begin(index, task, pauseOnset);
         }
 
         void OnPauseEnded(int index)
         {
             if (index != pauseIndex) return;
-            if (lesson.Config.LearnerRotates)
-            {
-                arcDone |= embodied.RotationStarted;
-                embodied.End();
-            }
-            // Safety net: the pause must never end without the operation applied.
-            if (!arcDone) PlayArc(onset + lesson.Timeline.pauseSchedule.pauseLength, 0.001, "late arc (should not happen)");
+            arcDone |= embodied.RotationStarted;
+            embodied.End();
+            nextButton.Hide();
+            // The pause must never end without the operation applied: after Next, it snaps
+            // to its result; otherwise this is a safety net that should never be needed.
+            if (!arcDone) PlayArc(onset + lesson.Timeline.pauseSchedule.pauseLength, 0.001,
+                skipped ? "arc snapped (Next)" : "late arc (should not happen)");
             if (animator.IsPlaying) animator.Complete();
             demo.Finish();
             demo.HidePanel();
-            if (lesson.Config.DimsAtPauses) dimmer.SetDimmed(false);
+            dimmer.SetDimmed(false);
             pauseIndex = -1;
         }
 
         void Update()
         {
-            if (pauseIndex < 0 || lesson.OnBreak) return;
+            if (pauseIndex < 0 || lesson.OnBreak || skipped) return;
             LessonTimeline.PauseSchedule p = lesson.Timeline.pauseSchedule;
             double sincePause = lesson.Time - onset;
 
-            if (lesson.Config.LearnerRotates) embodied.Tick(p);
-            else if (!arcDone && sincePause >= p.scriptedArcStart)
-                PlayArc(onset + p.scriptedArcStart, p.arcDuration, "scripted arc");
+            embodied.Tick(p);
+            if (!nextButton.IsVisible && embodied.Current != EmbodiedPause.Phase.Predict) nextButton.Show();
 
             if (!demoDone && sincePause >= p.measurementDemoStart)
             {

@@ -3,10 +3,12 @@
         "predictTitle": "PREDICT",
         "turnTitle": "TURN",
         "positionHint": "Point at a marker on the sphere and pull the trigger.",
+        "positionHintDesktop": "Click a marker on the sphere.",
         "lockedLine": "Your prediction: {0}",
         "gateHint": "Press the button to apply the turn.",
         "timeoutHint": "Time to apply the turn. Press the button.",
         "rotateHint": "Grab the tip of the vector and turn it the way the arrow points. Let go when it stops.",
+        "watchHint": "Watch the turn.",
         "correctTitle": "CORRECT",
         "incorrectTitle": "NOT QUITE",
         "neutralTitle": "RESULT"

@@ -5,12 +5,23 @@ using UnityEngine;
 namespace Study.Visuals
 {
     // The static instrument: lat/long wireframe, the two brighter reference
-    // rings (equator and prime meridian), the faint shell, the three axes and
-    // their labels. Rebuilt only when the palette changes.
+    // rings (equator and prime meridian), the faint shell, the three axes, their
+    // labels and the six named states. Rebuilt only when the palette changes.
     public class SphereFrameView : SphereView
     {
         const int CircleSegments = 128;
         const int TubeSides = 8;
+
+        // The four equator states, labeled from the start of the lesson. Placed where the
+        // position markers put their own labels, so they are hidden while the markers show.
+        static readonly (string label, BlochVector direction)[] EquatorStates =
+        {
+            ("|+⟩", BlochVector.UnitX), ("|−⟩", BlochVector.UnitX * -1),
+            ("|+i⟩", BlochVector.UnitY), ("|−i⟩", BlochVector.UnitY * -1),
+        };
+
+        readonly List<GameObject> stateLabels = new List<GameObject>();
+        bool stateLabelsShown = true;
 
         public override bool IsDimmable => true;
 
@@ -48,6 +59,23 @@ namespace Study.Visuals
             AddLabel("|1⟩", p.axisZ.color, Rig.LocalPoint(BlochVector.UnitZ * -1, labelOut));
             AddLabel("x", p.axisX.color, Rig.LocalPoint(BlochVector.UnitX, labelOut));
             AddLabel("y", p.axisY.color, Rig.LocalPoint(BlochVector.UnitY, labelOut));
+
+            stateLabels.Clear();
+            Vector3 above = transform.InverseTransformVector(Vector3.up * PositionMarkersView.LabelRise);
+            foreach (var (label, direction) in EquatorStates)
+            {
+                Color color = Mathf.Abs((float)direction.X) > 0.5f ? p.axisX.color : p.axisY.color;
+                GameObject go = AddLabel(label, color, Rig.LocalPoint(direction) + above).gameObject;
+                go.SetActive(stateLabelsShown);
+                stateLabels.Add(go);
+            }
+        }
+
+        public void ShowStateLabels(bool on)
+        {
+            stateLabelsShown = on;
+            foreach (GameObject label in stateLabels)
+                if (label != null) label.SetActive(on);
         }
 
         void AddAxis(string name, StylePalette.Line style, BlochVector direction)

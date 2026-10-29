@@ -268,6 +268,44 @@ namespace Study.EditorTools
             return view;
         }
 
+        // Narration text, lower left of the sphere: below the prompt panel, which only shows in
+        // pauses (when this is hidden). Same width, inside the desktop frame. Canvas units are mm.
+        public static CaptionPanelView AddCaptionPanel(StylePalette palette, Vector3 sphereCenter, Vector3 eye)
+        {
+            const float W = 240, H = 170;
+            var canvasObject = new GameObject("Caption Panel", typeof(RectTransform));
+            var canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            var group = canvasObject.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            var rect = (RectTransform)canvasObject.transform;
+            rect.sizeDelta = new Vector2(W, H);
+            rect.localScale = Vector3.one * 0.001f;
+            rect.position = sphereCenter + new Vector3(-0.38f, -0.125f, -0.25f);
+            rect.rotation = Quaternion.LookRotation(rect.position - eye);
+
+            Image background = Box(rect, "Background", 0, 0, W, H);
+            Image accentBar = Box(rect, "Accent Bar", 0, 0, 3, H);
+            TextMeshProUGUI body = Text(rect, "Body", "", 13, 12, 10, W - 12, H - 10, TextAlignmentOptions.TopLeft);
+            body.textWrappingMode = TextWrappingModes.Normal;
+            body.enableAutoSizing = true; // the longest lines shrink to fit
+            body.fontSizeMin = 9;
+            body.fontSizeMax = 13;
+
+            var view = canvasObject.AddComponent<CaptionPanelView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("palette").objectReferenceValue = palette;
+            so.FindProperty("group").objectReferenceValue = group;
+            so.FindProperty("background").objectReferenceValue = background;
+            SetArray(so, "accents", accentBar);
+            so.FindProperty("body").objectReferenceValue = body;
+            so.ApplyModifiedProperties();
+            view.ApplyStyle();
+            group.alpha = 0; // hidden until the lesson starts
+            return view;
+        }
+
         // A column 50 mm wide from y = 56 to y = 146 holding a bar that fills it bottom-up.
         static RectTransform Bar(RectTransform parent, string name, float x, Color color)
         {

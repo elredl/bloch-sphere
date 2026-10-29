@@ -24,6 +24,7 @@ namespace Study.EditorTools
         const string LaunchScenePath = "Assets/Study/Scenes/Launch.unity";
         const string TimelinePath = "Assets/Study/Data/lesson_timeline.json";
         const string FeedbackPath = "Assets/Study/Data/pause_feedback.json";
+        const string CaptionsPath = "Assets/Study/Data/narration_captions.json";
 
         // Seated participant: eye about 1.2 m above the floor. The sphere center sits
         // 0.25 m below eye level and 0.8 m forward. Calibration (SessionFlow) moves the
@@ -150,12 +151,13 @@ namespace Study.EditorTools
             var animator = sphere.AddComponent<GateArcAnimator>();
             Set(animator, "state", state);
             sphere.AddComponent<SphereDimmer>();
-            AddChild<SphereFrameView>(sphere, "Frame");
+            var frame = AddChild<SphereFrameView>(sphere, "Frame");
             AddChild<AngleArcsView>(sphere, "Angle Arcs");
             AddChild<ArcTrailView>(sphere, "Arc Trail");
             AddChild<GateAxisView>(sphere, "Gate Axis");
             var arrow = AddChild<GateDirectionView>(sphere, "Direction Arrow");
             var markers = AddChild<PositionMarkersView>(sphere, "Position Markers");
+            Set(markers, "frame", frame);
             var vectorView = AddChild<StateVectorView>(sphere, "State Vector");
             var ghost = AddChild<StateVectorView>(sphere, "Ghost Vector");
             var ghostSo = new SerializedObject(ghost);
@@ -209,6 +211,13 @@ namespace Study.EditorTools
             Set(demo, "ghost", ghost);
             Set(demo, "panel", panel);
             Set(lesson, "demo", demo);
+
+            var captionPanel = LessonScenePieces.AddCaptionPanel(palette, SphereCenter, DefaultEye);
+            captionPanel.transform.SetParent(stage.transform, true);
+            var captions = lessonObject.AddComponent<NarrationCaptions>();
+            Set(captions, "lesson", lesson);
+            Set(captions, "panel", captionPanel);
+            Set(captions, "captionsJson", AssetDatabase.LoadAssetAtPath<TextAsset>(CaptionsPath));
 
             var director = lessonObject.AddComponent<PauseDirector>();
             Set(director, "lesson", lesson);

@@ -68,6 +68,13 @@ the real narration means replacing the clip and editing timestamps only. The dra
 script, timed against the timeline and checked by `tools/narration_script.py`, is
 `docs/NARRATION_SCRIPT.md`.
 
+While the placeholder plays, the script is shown as text (all conditions): the
+current line, by lesson time, in a panel lower left of the sphere, hidden in
+pauses (the prompt panel sits above it). Kets are written as symbols (|0>, not
+"ket zero"). The lines come from `Assets/Study/Data/narration_captions.json`,
+which `tools/narration_script.py` writes. Assigning a recorded clip turns the
+text off. Whether the real lesson keeps captions is an open design decision.
+
 Pause length tuning: run internal dry runs with labmates first. If more than
 about 1 in 5 Cond 3 attempts time out, lengthen all four pauses by the same
 amount, then freeze.
@@ -243,6 +250,7 @@ ScriptableObject. No hard-coded colors elsewhere.
 | X axis | orange `#FF9E1B` | |
 | Y axis | violet `#A970FF` | |
 | Z axis | cyan `#00F0FF`, brightest axis | \|0> and \|1> labels at the poles |
+| Equator states | x orange / y violet | \|+>, \|->, \|+i>, \|-i> labeled from the start (decided 2026-10-29), just above the surface; hidden while the position markers show their own |
 | State vector | white-hot core, magenta `#FF2E88` glow | brightest object, tip marker |
 | Gate rotation axis | dashed glowing amber `#FFE14D` | only while a gate is applied |
 | Gate arc trail | amber `#FFE14D`, fading tail | |

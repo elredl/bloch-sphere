@@ -20,6 +20,10 @@ namespace Study.Visuals
         const float RingRadiusMetres = 0.016f;
         const float HitSizeMm = 56f;
         const float HoverScale = 1.4f;
+        public const float LabelRise = 0.035f; // equator labels sit this far (m) above the ring
+
+        [Tooltip("Its equator state labels are hidden while the markers (with their own) show.")]
+        [SerializeField] SphereFrameView frame;
 
         public override bool IsDimmable => false;
 
@@ -62,7 +66,7 @@ namespace Study.Visuals
 
                 // Above the ring; at the poles beside it, clear of the z axis and the pole labels.
                 bool pole = Mathf.Abs((float)direction.Z) > 0.5f;
-                Vector3 offset = pole ? Vector3.right * 0.05f : Vector3.up * 0.035f;
+                Vector3 offset = pole ? Vector3.right * 0.05f : Vector3.up * LabelRise;
                 AddLabel(label, style.color, point + transform.InverseTransformVector(offset), root);
                 hitTargets.Add(AddHitTarget(answer, point, rings.Count - 1));
             }
@@ -80,12 +84,14 @@ namespace Study.Visuals
                     hit.rotation = Quaternion.LookRotation(hit.position - cam.transform.position);
             foreach (Transform ring in rings) ring.localScale = Vector3.one;
             root.gameObject.SetActive(true);
+            if (frame != null) frame.ShowStateLabels(false);
         }
 
         public void Hide()
         {
             visible = false;
             if (root != null) root.gameObject.SetActive(false);
+            if (frame != null) frame.ShowStateLabels(true);
         }
 
         // Editor and dev runs: the same path as a trigger pull on the marker.

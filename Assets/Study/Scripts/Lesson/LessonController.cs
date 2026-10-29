@@ -51,6 +51,8 @@ namespace Study.Lesson
         // Index of the pause in progress, -1 during narration.
         public int CurrentPause { get; private set; } = -1;
         public bool InPause => CurrentPause >= 0;
+        // No recorded clip: the beeping stand-in plays and NarrationCaptions shows the script.
+        public bool UsesPlaceholderNarration { get; private set; }
 #if UNITY_EDITOR
         public float DevPlaybackSpeed => devPlaybackSpeed;
 #else
@@ -103,6 +105,7 @@ namespace Study.Lesson
             if (narration == null)
             {
                 narration = PlaceholderNarration.Create(Timeline);
+                UsesPlaceholderNarration = true;
                 Debug.LogWarning("[Lesson] No narration clip assigned: using the generated placeholder.");
             }
             double demoWindow = Timeline.pauseSchedule.measurementDemoEnd - Timeline.pauseSchedule.measurementDemoStart;

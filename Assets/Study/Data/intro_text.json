@@ -1,0 +1,71 @@
+{
+    "nextLabel": "NEXT",
+    "boxes": [
+        {
+            "id": "foundation",
+            "title": "BEFORE WE BEGIN",
+            "body": "Before we begin, it's important to understand the foundation this lesson in quantum computing is built on: how a qubit's state is written down, and why we picture it the way we do. Let's build it up one piece at a time."
+        },
+        {
+            "id": "space",
+            "title": "WHERE A QUBIT LIVES",
+            "body": "ℂ² (\"C two\") is where a qubit's state lives. The ℂ stands for the complex numbers, and the ² means a pair of them. So a qubit's state is described by two complex numbers."
+        },
+        {
+            "id": "state",
+            "title": "WRITING A QUBIT'S STATE",
+            "body": "We write a qubit's state |ψ⟩ (\"psi\") as a column of those two numbers, α (\"alpha\") and β (\"beta\"). α belongs to |0⟩ and β belongs to |1⟩: together they say how much of each the qubit holds."
+        },
+        {
+            "id": "complex",
+            "title": "COMPLEX NUMBERS",
+            "body": "Each of α and β is a complex number: a real part plus an imaginary part. In α = a + b<color=#FFE14D>i</color>, a and b are ordinary real numbers, like 0.6 or −2. The same goes for c and d in β."
+        },
+        {
+            "id": "imaginary",
+            "title": "THE IMAGINARY UNIT",
+            "body": "The <color=#FFE14D>i</color> is the imaginary unit: the number whose square is −1. No ordinary real number does that, so <color=#FFE14D>i</color> brings in a new kind of number. That is what makes α and β complex."
+        },
+        {
+            "id": "why",
+            "title": "WHY COMPLEX NUMBERS?",
+            "body": "Quantum computing needs ℂ² because α and β carry a phase: like arrows, they can add up or cancel out. That interference is what quantum algorithms are built on, and real numbers alone can't describe every state a qubit can be in. You won't need the details in this lesson."
+        },
+        {
+            "id": "visualize",
+            "title": "LET'S VISUALIZE IT",
+            "body": "Let's try to picture these numbers."
+        },
+        {
+            "id": "r2",
+            "title": "TWO REAL NUMBERS",
+            "body": "A pair of real numbers (a, b) is easy to picture: go a steps along x and b steps along y. The arrow from the center to that point is a vector in ℝ², the flat plane you already know. Two real numbers, two directions, one flat picture."
+        },
+        {
+            "id": "same",
+            "title": "CAN WE DO THE SAME?",
+            "body": "ℂ² is also a pair of numbers, (α, β). Can we draw it as an arrow on a flat plane too?",
+            "answer": "No. Every complex number already takes two real numbers (a + b<color=#FFE14D>i</color>), so α and β together take four: a, b, c and d. The <color=#FFE14D>i</color> adds a new direction to each one, and a flat plane runs out of room. We need a different kind of picture."
+        },
+        {
+            "id": "bloch",
+            "title": "THE BLOCH SPHERE",
+            "body": "This is the Bloch sphere, the standard way to picture a qubit's state in quantum computing. Every state is a point on its surface: |0⟩ at the top, |1⟩ at the bottom, and every other state somewhere in between. Why four numbers fit on a sphere takes more advanced math, so we'll take it as given and learn to read it."
+        },
+        {
+            "id": "vector",
+            "title": "WHERE THE QUBIT IS",
+            "body": "To show where the qubit is on the Bloch sphere, we use a vector: an arrow from the center to a point on the sphere. This one is |ψ⟩. The vector must be normalized: its length is always exactly 1, the radius of the sphere, so it can never leave the sphere. In terms of α and β, normalized means |α|² + |β|² = 1."
+        },
+        {
+            "id": "unitary",
+            "title": "MOVING THE VECTOR",
+            "body": "Now, if we want to move this vector, we use special matrices called unitaries. A unitary is an operation that takes a normalized vector to another normalized vector, so the arrow always stays on the sphere."
+        },
+        {
+            "id": "math",
+            "title": "UNITARIES IN MATH",
+            "body": "Applying a unitary U to the state |ψ⟩ is written U|ψ⟩, and it gives a new state |ψ′⟩: the vector just turned from |ψ⟩ (now dim) to |ψ′⟩, still on the sphere. As matrices, U is a 2 × 2 grid of numbers that multiplies the column (α, β) to give the new column (α′, β′). The gates in this lesson are unitaries: on the Bloch sphere, each one turns the vector."
+        }
+    ]
+}

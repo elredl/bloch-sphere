@@ -53,8 +53,9 @@ namespace Study.Lesson
         void OnEnable() => lesson.MeasurementDemoRequested += OnNarratedDemo;
         void OnDisable() => lesson.MeasurementDemoRequested -= OnNarratedDemo;
 
-        void OnNarratedDemo(LessonTimeline.LessonEvent e) => Run(Qubit.FromName(e.state), e.shots, e.seed, e.t);
+        void OnNarratedDemo(LessonTimeline.LessonEvent e) => Run(Qubit.FromName(e.state), e.shots, e.seed, lesson.ToNow(e.t));
 
+        // scheduledStart: on lesson.Now.
         public void Run(Qubit preparedState, int shots, ulong seed, double scheduledStart)
         {
             if (!state.Current.IsSameStateAs(preparedState, 1e-6))
@@ -79,7 +80,7 @@ namespace Study.Lesson
         void Update()
         {
             if (!running) return;
-            double now = lesson.Time;
+            double now = lesson.Now;
             // Catch up on every shot that is due, in order, even after a slow frame.
             while (pending.Count > 0 && pending[0].time <= now)
             {

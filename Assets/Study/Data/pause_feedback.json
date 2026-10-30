@@ -2,13 +2,17 @@
     "ui": {
         "placeTitle": "PLACE",
         "placeHint": "Grab the tip of the dim vector and move it to where the turn will take it, or point at a marker. Then press Lock in.",
+        "placeHintDesktop": "Drag the tip of the dim vector to where the turn will take it, or click a marker. Then click Lock in.",
+        "placeHintList": "Pick the state the turn will take the vector to.",
+        "placeHintListHeight": "Pick how far the vector will be from |0⟩.",
         "lockLabel": "Lock in",
+        "chooseHint": "You can still change your answer. Press Lock in when you are sure.",
         "predictTitle": "PREDICT",
         "turnTitle": "TURN",
         "positionHint": "Point at a marker on the sphere and pull the trigger.",
+        "positionHintDesktop": "Click a marker on the sphere.",
         "lockedLine": "Your prediction: {0}",
         "gateHint": "Press the button to apply the turn.",
-        "timeoutHint": "Time to apply the turn. Press the button.",
         "rotateHint": "Watch the turn. The dim vector is your prediction.",
         "correctTitle": "CORRECT",
         "incorrectTitle": "NOT QUITE",
@@ -19,7 +23,7 @@
         {
             "id": "pause1",
             "placement": {
-                "prompt": "Where will the vector point after a quarter turn toward |1⟩? Place the dim vector there.",
+                "prompt": "Where will the vector point after a quarter turn toward |1⟩?",
                 "correct": "Right place: a quarter turn reaches the equator.",
                 "noPlacement": "A quarter turn took the vector to the equator.",
                 "genericIncorrect": "A quarter turn takes the vector to the equator.",
@@ -56,7 +60,7 @@
         {
             "id": "pause2",
             "placement": {
-                "prompt": "Where will the vector point after S, a quarter turn about z? Place the dim vector there.",
+                "prompt": "Where will the vector point after S, a quarter turn about z?",
                 "correct": "Right place: S turns |+i⟩ a quarter turn on, to |−⟩.",
                 "noPlacement": "S turned the vector a quarter turn on, from |+i⟩ to |−⟩.",
                 "genericIncorrect": "S turns |+i⟩ a quarter turn around the equator, to |−⟩.",
@@ -98,7 +102,7 @@
         {
             "id": "pause3",
             "placement": {
-                "prompt": "Where will the vector point after H? Place the dim vector there.",
+                "prompt": "Where will the vector point after H?",
                 "correct": "Right place: after the Z, H sends |−⟩ to |1⟩.",
                 "noPlacement": "After the Z, H sent |−⟩ to |1⟩, not back to |0⟩.",
                 "genericIncorrect": "H swaps |−⟩ and |1⟩, so it ends at |1⟩.",
@@ -140,7 +144,7 @@
         {
             "id": "pause4",
             "placement": {
-                "prompt": "Where will the vector point after a 60° turn toward |1⟩? Place the dim vector there.",
+                "prompt": "Where will the vector point after a 60° turn toward |1⟩?",
                 "correct": "Right place: 60° stops above the equator.",
                 "noPlacement": "60° stopped above the equator.",
                 "genericIncorrect": "60° stops above the equator.",

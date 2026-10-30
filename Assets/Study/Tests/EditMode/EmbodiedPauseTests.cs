@@ -183,14 +183,5 @@ namespace Study.Tests
             Assert.AreEqual("correct", f.ForPlacement(t.Task("pause1"), true, true, "+").Id);
             Assert.AreEqual("no_prediction", f.ForPlacement(t.Task("pause1"), false, false, null).Type);
         }
-
-        [Test]
-        public void TimeoutArc_AlwaysFinishesBeforeTheMeasurementDemo()
-        {
-            LessonTimeline.PauseSchedule p = Timeline().pauseSchedule;
-            Assert.LessOrEqual(p.rotationDeadline + p.timeoutArcMaxDuration, p.measurementDemoStart);
-            Assert.Less(p.placementDeadline, p.predictionDeadline);
-            Assert.Less(p.predictionDeadline, p.rotationDeadline);
-        }
     }
 }

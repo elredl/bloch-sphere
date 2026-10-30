@@ -244,7 +244,7 @@ namespace Study.EditorTools
         }
 
         public static SessionFlow AddSessionFlow(GameObject sessionObject, LessonController lesson, PauseDirector pauses,
-            EmbodiedPause embodied, Transform stage, GameObject sphere, GameObject xrOrigin, GameObject[] interactors,
+            EmbodiedPause embodied, IntroSequence intro, Transform stage, GameObject sphere, GameObject xrOrigin, GameObject[] interactors,
             Orientation orientation, StudyPanelView overlay, EndScreen end)
         {
             var input = sessionObject.AddComponent<SessionInput>();
@@ -253,6 +253,7 @@ namespace Study.EditorTools
             so.FindProperty("lesson").objectReferenceValue = lesson;
             so.FindProperty("pauses").objectReferenceValue = pauses;
             so.FindProperty("embodied").objectReferenceValue = embodied;
+            so.FindProperty("intro").objectReferenceValue = intro;
             so.FindProperty("stage").objectReferenceValue = stage;
             so.FindProperty("sphere").objectReferenceValue = sphere;
             so.FindProperty("xrOrigin").objectReferenceValue = xrOrigin.GetComponent<XROrigin>();

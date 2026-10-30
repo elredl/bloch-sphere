@@ -26,6 +26,7 @@ namespace Study.EditorTools
             bool full = parts.Length > 2 && parts[2] == "full";
             var flow = new SerializedObject(Object.FindAnyObjectByType<SessionFlow>());
             flow.FindProperty("devSkipToLesson").boolValue = !full;
+            flow.FindProperty("devSkipIntro").boolValue = parts.Length > 3 && parts[3] == "nointro";
             flow.ApplyModifiedProperties();
             EditorSceneManager.SaveOpenScenes();
             return $"dev run: condition {parts[0]}, speed {parts[1]}x, {(full ? "full session" : "lesson only")}";
@@ -138,6 +139,22 @@ namespace Study.EditorTools
             var lesson = Object.FindAnyObjectByType<LessonController>();
             lesson.DevSeek(double.Parse(arg, CultureInfo.InvariantCulture));
             return "seek " + arg;
+        }
+
+        // Play Mode: the same path as clicking NEXT in a pause, or on the intro's text box.
+        public static string PressNext(string arg)
+        {
+            var introPanel = Object.FindAnyObjectByType<IntroPanelView>();
+            if (introPanel != null && introPanel.IsShowing)
+            {
+                introPanel.Press();
+                return "intro next pressed";
+            }
+            var next = Object.FindAnyObjectByType<NextButtonView>();
+            var lesson = Object.FindAnyObjectByType<LessonController>();
+            bool visible = next.IsVisible;
+            next.Press();
+            return $"next pressed (visible={visible}) at lessonTime={lesson.Time:F2} pause={lesson.CurrentPause}";
         }
 
         // Play Mode. arg = "lessonTime,camera,path;lessonTime,camera,path;..." Each capture is

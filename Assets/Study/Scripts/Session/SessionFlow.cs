@@ -25,7 +25,7 @@ namespace Study.Session
     [DefaultExecutionOrder(-50)]
     public class SessionFlow : MonoBehaviour
     {
-        public enum Step { Calibrate, Ready, Orientation, Lesson, End }
+        public enum Step { Calibrate, Ready, Orientation, Intro, Lesson, End }
         enum BreakKind { None, Key, Headset }
 
         // Stage height that puts the sphere 0.25 m below a 1.2 m eye (the scene's default).
@@ -34,6 +34,7 @@ namespace Study.Session
         [SerializeField] LessonController lesson;
         [SerializeField] PauseDirector pauses;
         [SerializeField] EmbodiedPause embodied;
+        [SerializeField] IntroSequence intro;
         [SerializeField] Transform stage;
         [SerializeField] GameObject sphere;
         [SerializeField] XROrigin xrOrigin;
@@ -47,6 +48,8 @@ namespace Study.Session
         [Header("Development only")]
         [Tooltip("Editor only, when the Lesson scene is played directly: start the lesson at once, without calibration and orientation.")]
         [SerializeField] bool devSkipToLesson = true;
+        [Tooltip("Editor only, with the above: skip the intro too (simulated learner runs).")]
+        [SerializeField] bool devSkipIntro = false;
 
         public Step Current => step;
         public Orientation Orientation => orientation;
@@ -100,15 +103,18 @@ namespace Study.Session
                 foreach (XRInputSubsystem s in inputSubsystems) s.trackingOriginUpdated += OnTrackingOriginUpdated;
             }
             lesson.LessonEnded += OnLessonEnded;
-            orientation.Finished += StartLesson;
+            lesson.PauseStarted += OnPauseStarted;
+            lesson.PauseEnded += OnPauseEnded;
+            orientation.Finished += StartIntro;
             overlay.Hide();
             sphere.SetActive(false);
             SetInteractors(false);
             if (Application.isEditor) Time.timeScale = lesson.DevPlaybackSpeed; // dev runs: orientation keeps pace too
             if (devSession && devSkipToLesson)
             {
-                Debug.LogWarning("[Session] Dev run: straight to the lesson (no calibration or orientation).");
-                StartLesson();
+                Debug.LogWarning("[Session] Dev run: straight to the " + (devSkipIntro ? "lesson" : "intro") + " (no calibration or orientation).");
+                if (devSkipIntro) StartLesson();
+                else StartIntro();
                 return;
             }
             if (headset) EnterCalibrate();
@@ -133,8 +139,13 @@ namespace Study.Session
 
         void OnDestroy()
         {
-            if (lesson != null) lesson.LessonEnded -= OnLessonEnded;
-            if (orientation != null) orientation.Finished -= StartLesson;
+            if (lesson != null)
+            {
+                lesson.LessonEnded -= OnLessonEnded;
+                lesson.PauseStarted -= OnPauseStarted;
+                lesson.PauseEnded -= OnPauseEnded;
+            }
+            if (orientation != null) orientation.Finished -= StartIntro;
             foreach (XRInputSubsystem s in inputSubsystems) s.trackingOriginUpdated -= OnTrackingOriginUpdated;
         }
 
@@ -213,14 +224,37 @@ namespace Study.Session
             orientation.Begin(text, !headset);
         }
 
+        // The intro (all conditions) needs a pointer for its NEXT button: the controller
+        // rays, or the mouse in Condition 1.
+        void StartIntro()
+        {
+            if (step == Step.End) return;
+            step = Step.Intro;
+            SetInteractors(headset);
+            if (!lesson.Config.UsesHeadset) DesktopDisplay.SetCursorHidden(false);
+            intro.Run(StartLesson);
+        }
+
         void StartLesson()
         {
             if (step == Step.End) return;
             step = Step.Lesson;
             sphere.SetActive(true);
-            SetInteractors(lesson.Config.LearnerRotates);
-            if (!lesson.Config.UsesHeadset) DesktopDisplay.SetCursorHidden(true); // spec: no mouse during the lesson
+            ApplyLessonPointer();
             lesson.Begin();
+        }
+
+        // The Next button needs a pointer in every pause: the controller rays (Cond 2 has
+        // them only then) or the mouse (Cond 1 hides it while the narration plays).
+        void OnPauseStarted(int index, LessonTimeline.Segment segment, LessonTimeline.PauseTask task, double onset) => ApplyLessonPointer();
+
+        void OnPauseEnded(int index) => ApplyLessonPointer();
+
+        void ApplyLessonPointer()
+        {
+            if (step != Step.Lesson || OnBreak) return;
+            SetInteractors(lesson.Config.LearnerRotates || lesson.InPause);
+            if (!lesson.Config.UsesHeadset) DesktopDisplay.SetCursorHidden(!lesson.InPause);
         }
 
         void OnLessonEnded()
@@ -234,6 +268,7 @@ namespace Study.Session
             StudyEvents.Log("abort", $"step={step.ToString().ToLowerInvariant()} input={inputName}");
             if (OnBreak) EndBreak("abort");
             orientation.Stop();
+            intro.Stop();
             lesson.Abort();
             pauses.enabled = false;
             embodied.End();
@@ -273,6 +308,7 @@ namespace Study.Session
                     if (input.TriggerPressed || input.MouseClicked) StartOrientation();
                     break;
                 case Step.Orientation:
+                case Step.Intro:
                 case Step.Lesson:
                     if (input.BreakKeyPressed && breakKind != BreakKind.Headset)
                     {
@@ -320,7 +356,7 @@ namespace Study.Session
                 awayReason = reason;
                 calibrating = false;
                 StudyEvents.Log("hmd_removed", $"reason={reason} step={StepName} {HeadOffset()}");
-                if ((step == Step.Orientation || step == Step.Lesson) && breakKind == BreakKind.None) BeginBreak(BreakKind.Headset);
+                if ((step == Step.Orientation || step == Step.Intro || step == Step.Lesson) && breakKind == BreakKind.None) BeginBreak(BreakKind.Headset);
                 awaitingResume = false;
             }
             else
@@ -361,7 +397,8 @@ namespace Study.Session
                 Time.timeScale = timeScaleBeforeBreak;
                 orientation.SetPaused(false);
             }
-            SetInteractors(step == Step.Orientation ? headset : lesson.Config.LearnerRotates);
+            if (step == Step.Lesson) ApplyLessonPointer();
+            else SetInteractors(headset);
         }
 
         // ---- overlay: calibration, ready, break and the abort hold ----
@@ -405,7 +442,7 @@ namespace Study.Session
         // Dev runs (LessonDevTools): the same paths as the experimenter's buttons.
         public void DevCalibrate() { if (step == Step.Calibrate) { EnterReady(); } }
         public void DevBegin() { if (step == Step.Ready) StartOrientation(); }
-        public void DevBreak() { if (step == Step.Orientation || step == Step.Lesson) { if (OnBreak) EndBreak("dev"); else BeginBreak(BreakKind.Key); } }
+        public void DevBreak() { if (step == Step.Orientation || step == Step.Intro || step == Step.Lesson) { if (OnBreak) EndBreak("dev"); else BeginBreak(BreakKind.Key); } }
         public void DevAbort() { if (step != Step.End) Abort("dev"); }
 #endif
     }

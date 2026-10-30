@@ -25,6 +25,8 @@ namespace Study.Visuals
         Transform pivot;
         Qubit shown = Qubit.Zero;
         bool visible = true;
+        float length = 1;
+        Transform[] tips;
 
         protected override void OnEnable()
         {
@@ -63,10 +65,14 @@ namespace Study.Visuals
             AddMesh("Vector Glow", halo.ToMesh(), StyledMaterials.LineHalo(p, glow), pivot);
 
             float tipRadius = p.vectorTipDiameterMm * 0.0005f;
-            AddMesh("Tip Core", TubeMeshBuilder.Sphere(tipRadius * 0.5f, 16, 8),
-                StyledMaterials.Neon(p, p.vectorCore, p.vectorGlowIntensity * scale, 0f, 1f), pivot).transform.localPosition = tip;
-            AddMesh("Tip Glow", TubeMeshBuilder.Sphere(tipRadius, 16, 8),
-                StyledMaterials.Neon(p, p.vectorGlow, p.vectorGlowIntensity * scale, 1.5f, 0f), pivot).transform.localPosition = tip;
+            Transform tipCore = AddMesh("Tip Core", TubeMeshBuilder.Sphere(tipRadius * 0.5f, 16, 8),
+                StyledMaterials.Neon(p, p.vectorCore, p.vectorGlowIntensity * scale, 0f, 1f), pivot).transform;
+            Transform tipGlow = AddMesh("Tip Glow", TubeMeshBuilder.Sphere(tipRadius, 16, 8),
+                StyledMaterials.Neon(p, p.vectorGlow, p.vectorGlowIntensity * scale, 1.5f, 0f), pivot).transform;
+            tipCore.localPosition = tip;
+            tipGlow.localPosition = tip;
+            tips = new[] { tipCore, tipGlow };
+            SetLength(length);
 
             ShowDirection(state != null ? state.Current : shown);
             pivot.gameObject.SetActive(visible);
@@ -83,6 +89,17 @@ namespace Study.Visuals
         {
             visible = value;
             if (pivot != null) pivot.gameObject.SetActive(value);
+        }
+
+        // The intro only: draws the vector out from the center (0 = none, 1 = the full
+        // radius). The lesson never changes it, so its length always stays the radius.
+        public void SetLength(float fraction)
+        {
+            length = Mathf.Clamp01(fraction);
+            if (pivot == null) return;
+            float f = Mathf.Max(length, 1e-3f);
+            pivot.localScale = new Vector3(1, f, 1);
+            foreach (Transform t in tips) t.localScale = new Vector3(1, 1 / f, 1); // the tip stays round
         }
 
         // 0 = invisible, 1 = full. Used for re-preparation and measurement fades.

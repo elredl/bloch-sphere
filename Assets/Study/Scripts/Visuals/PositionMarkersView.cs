@@ -4,11 +4,10 @@ using Study.Quantum;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace Study.Visuals
 {
-    // Condition 3 "where will the vector point?" answers: six glowing, labeled
+    // The "where will the vector point?" answers (all conditions): six glowing, labeled
     // rings on the sphere at |0>, |1>, |+>, |->, |+i>, |-i>. Each ring takes the
     // color of its axis and its own ket label at full brightness (the sphere's
     // labels are dimmed in the pause). The learner points a controller ray at one and pulls the
@@ -21,6 +20,10 @@ namespace Study.Visuals
         const float RingRadiusMetres = 0.016f;
         const float HitSizeMm = 56f;
         const float HoverScale = 1.4f;
+        public const float LabelRise = 0.035f; // equator labels sit this far (m) above the ring
+
+        [Tooltip("Its equator state labels are hidden while the markers (with their own) show.")]
+        [SerializeField] SphereFrameView frame;
 
         public override bool IsDimmable => false;
 
@@ -63,7 +66,7 @@ namespace Study.Visuals
 
                 // Above the ring; at the poles beside it, clear of the z axis and the pole labels.
                 bool pole = Mathf.Abs((float)direction.Z) > 0.5f;
-                Vector3 offset = pole ? Vector3.right * 0.05f : Vector3.up * 0.035f;
+                Vector3 offset = pole ? Vector3.right * 0.05f : Vector3.up * LabelRise;
                 AddLabel(label, style.color, point + transform.InverseTransformVector(offset), root);
                 hitTargets.Add(AddHitTarget(answer, point, rings.Count - 1));
             }
@@ -81,12 +84,14 @@ namespace Study.Visuals
                     hit.rotation = Quaternion.LookRotation(hit.position - cam.transform.position);
             foreach (Transform ring in rings) ring.localScale = Vector3.one;
             root.gameObject.SetActive(true);
+            if (frame != null) frame.ShowStateLabels(false);
         }
 
         public void Hide()
         {
             visible = false;
             if (root != null) root.gameObject.SetActive(false);
+            if (frame != null) frame.ShowStateLabels(true);
         }
 
         // Editor and dev runs: the same path as a trigger pull on the marker.
@@ -115,8 +120,7 @@ namespace Study.Visuals
             rect.sizeDelta = new Vector2(HitSizeMm, HitSizeMm);
             rect.localScale = Vector3.one * 0.001f;
             go.AddComponent<Canvas>().renderMode = RenderMode.WorldSpace;
-            var raycaster = go.AddComponent<TrackedDeviceGraphicRaycaster>();
-            raycaster.ignoreReversedGraphics = false;
+            PointerSupport.Add(go); // controller ray, or the mouse in Condition 1
 
             var image = new GameObject("Area", typeof(RectTransform), typeof(Image));
             var imageRect = (RectTransform)image.transform;

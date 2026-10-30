@@ -4,7 +4,9 @@
 The script text lives here (LINES), so every edit is re-checked: run from the project root
     python3 tools/narration_script.py
 It fails if a line runs into a pause (the pauses must be silent in the recording), overlaps
-another line, or needs more than MAX_RATE words per second, and writes docs/NARRATION_SCRIPT.md.
+another line, or needs more than MAX_RATE words per second, and writes docs/NARRATION_SCRIPT.md
+and the on-screen captions (Assets/Study/Data/narration_captions.json, shown by the app while
+it plays the placeholder narration).
 
 Rules for the text (spec, experimental invariant): one narration for all three conditions.
 It never mentions predicting, grabbing, buttons or feedback (Condition 3 only), never poses
@@ -18,6 +20,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TIMELINE = json.loads((ROOT / "Assets/Study/Data/lesson_timeline.json").read_text(encoding="utf-8"))
 OUT = ROOT / "docs/NARRATION_SCRIPT.md"
+CAPTIONS = ROOT / "Assets/Study/Data/narration_captions.json"
 MAX_RATE = 2.3   # words per second (about 140 a minute); the draft stays under 2.0
 
 # (start s, end s, what is on screen, text). Times are lesson time in the recording.
@@ -111,6 +114,23 @@ def max_rate():
     return max(words(t) / (e - s) for s, e, _, t in LINES) * 60
 
 
+# Spoken words back to the symbols on screen, longest first ("ket plus i" before "ket plus").
+SYMBOLS = [("ket plus i", "|+i⟩"), ("ket minus i", "|−i⟩"), ("ket zero", "|0⟩"), ("ket one", "|1⟩"),
+           ("ket plus", "|+⟩"), ("ket minus", "|−⟩"), ("theta", "θ"), ("phi", "φ")]
+
+
+def caption(text):
+    for spoken, symbol in SYMBOLS:
+        text = re.sub(rf"\b{spoken}\b", symbol, text)
+    return text
+
+
+def write_captions():
+    lines = [{"start": start, "end": end, "text": caption(text)} for start, end, _, text in LINES]
+    body = ",\n".join("        " + json.dumps(line, ensure_ascii=False) for line in lines)
+    CAPTIONS.write_text("{\n    \"lines\": [\n" + body + "\n    ]\n}\n", encoding="utf-8")
+
+
 def clock(seconds):
     return f"{int(seconds // 60)}:{int(seconds % 60):02d}"
 
@@ -159,5 +179,6 @@ if __name__ == "__main__":
     for p in problems:
         print("ERROR", p)
     render()
-    print(f"wrote {OUT.relative_to(ROOT)}; {len(problems)} timing errors")
+    write_captions()
+    print(f"wrote {OUT.relative_to(ROOT)} and {CAPTIONS.relative_to(ROOT)}; {len(problems)} timing errors")
     sys.exit(1 if problems else 0)

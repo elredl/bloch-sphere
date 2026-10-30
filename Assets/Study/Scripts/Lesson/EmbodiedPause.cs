@@ -5,25 +5,33 @@ using UnityEngine;
 
 namespace Study.Lesson
 {
-    // Condition 3 inside a pause, driven by PauseDirector with pause-relative time:
+    // Every condition inside a pause, driven by PauseDirector. Pauses are untimed: each
+    // step waits for the learner, and the Next button (PauseDirector) ends the pause
+    // once the feedback shows.
     //
-    //   0 s       question 1: a dim prediction vector appears on the current state; the
-    //             learner grabs its tip and moves it anywhere on the sphere (or points at
-    //             a marker to snap it there), then presses Lock in
-    //   20 s      not locked: a moved vector locks where it is, an untouched one times out
-    //   lock      question 2: the five P(0) buttons; the first answer locks
-    //   32 s      no answer: prediction_timeout
-    //   answer    the gate button appears; the press plays the gate as an arc, while the
-    //             prediction vector stays in place to compare against
-    //   35 s      not pressed: the gate plays anyway, rotation_timeout
-    //   done      feedback on both answers until 60 s (pause 4: panel hidden through the
-    //             demo, feedback from 51 s)
+    //   question 1  where the turn will take the vector. Cond 1/3: a dim prediction
+    //               vector appears on the current state; the learner drags its tip
+    //               anywhere on the sphere (mouse or controller) or picks a marker to
+    //               snap it there, then presses Lock in. Cond 2: a list of states (or
+    //               of angles from |0>); a pick lights up and can be changed until Lock
+    //               in, which shows the dim vector there
+    //   question 2  the P(0) buttons: pick, then Lock in
+    //   turn        Cond 1/3: the gate button; the press plays the gate as an arc.
+    //               Cond 2: WatchDelay after locking, the arc plays by itself. Either
+    //               way the prediction vector stays in place to compare against
+    //   feedback    on both answers (pause 4: after the measurement demo)
+    //
+    // (The name is historical: this used to run in Condition 3 only.)
     //
     // Every path applies the same gate, so the pause always ends in the same state
     // as in the other conditions, and nothing here changes when the pause ends.
     public class EmbodiedPause : MonoBehaviour
     {
-        public enum Phase { Idle, Place, Predict, Gate, Finishing, Done }
+        public enum Phase { Idle, Place, Predict, Gate, Watch, Finishing, Done }
+
+        // Cond 2: seconds between locking the answer and the scripted arc, so the
+        // locked answer reads before the vector moves.
+        public const double WatchDelay = 1.0;
 
         [SerializeField] LessonController lesson;
         [SerializeField] GateArcAnimator animator;
@@ -41,10 +49,15 @@ namespace Study.Lesson
 
         public Phase Current => phase;
         public int PauseNumber => index + 1;
-        public double SincePause => lesson.Time - onset;
+        // Seconds since the pause began, on lesson.Now (lesson time stands still in a pause).
+        public double SincePause => lesson.Now - onset;
         public LessonTimeline.PauseTask Task => task;
         public PauseFeedback Feedback => feedback;
         public bool RotationStarted => phase >= Phase.Finishing;
+        public bool TurnFinished => phase == Phase.Done;
+        // Everything is done and the feedback is up: the Next button may show.
+        public bool FeedbackShown => feedbackShown;
+        bool HandsOn => lesson.Config.LearnerRotates;
 
         // Where the grab handle sits: the prediction vector's tip while placing, else null (the state's tip).
         public BlochVector? HandleTip => phase == Phase.Place ? placed : (BlochVector?)null;
@@ -55,11 +68,14 @@ namespace Study.Lesson
         double onset;
         Phase phase = Phase.Idle;
         string answer;
+        string selected; // picked on the panel, not yet locked in
         BlochVector placed;
-        bool touched, locked, placementCorrect;
+        bool touched, placementCorrect;
         string placedNear;
         Func<BlochVector> hand;
         bool feedbackShown;
+        bool feedbackHeld; // pause 4: until PauseDirector's measurement demo has run
+        double watchAt;    // Cond 2: SincePause at which the scripted arc starts
 
         void Awake()
         {
@@ -68,14 +84,14 @@ namespace Study.Lesson
 
         void OnEnable()
         {
-            panel.ChoicePicked += OnAnswer;
+            panel.ChoicePicked += OnChoice;
             panel.GatePressed += OnButton;
             markers.Picked += OnMarker;
         }
 
         void OnDisable()
         {
-            panel.ChoicePicked -= OnAnswer;
+            panel.ChoicePicked -= OnChoice;
             panel.GatePressed -= OnButton;
             markers.Picked -= OnMarker;
         }
@@ -86,31 +102,43 @@ namespace Study.Lesson
             foreach (string error in feedback.Validate(timeline)) Debug.LogError("[Pause] pause_feedback.json: " + error);
         }
 
+        // pauseOnset: lesson.Now at the pause onset.
         public void Begin(int pauseIndex, LessonTimeline.PauseTask pauseTask, double pauseOnset)
         {
             index = pauseIndex;
             task = pauseTask;
             onset = pauseOnset;
             answer = null;
+            selected = null;
             hand = null;
-            touched = locked = placementCorrect = false;
+            touched = placementCorrect = false;
             placedNear = null;
             feedbackShown = false;
+            feedbackHeld = task.measurementDemo;
             phase = Phase.Place;
 
             placed = state.Current.Bloch;
+            string prompt = feedback.Task(task.id).placement.prompt;
+            if (!HandsOn)
+            {
+                // Cond 2: nothing to move; the dim vector appears once a choice is locked in.
+                string[] choices = PauseFeedback.PlacementChoices(task);
+                string[] labels = Array.ConvertAll(choices, c => PauseFeedback.PlacementChoiceText(task, c));
+                string hint = task.placementMatch == "height" ? feedback.ui.placeHintListHeight : feedback.ui.placeHintList;
+                panel.ShowPrediction(feedback.ui.placeTitle, prompt, choices, labels, hint);
+                return;
+            }
             predictionVector.ShowDirection(state.Current);
             predictionVector.SetVisible(true);
-            panel.ShowPrediction(feedback.ui.placeTitle, feedback.Task(task.id).placement.prompt, null, null, null);
-            panel.ShowGateButton(feedback.ui.lockLabel, feedback.ui.placeHint);
+            panel.ShowPrediction(feedback.ui.placeTitle, prompt, null, null, null);
+            panel.ShowGateButton(feedback.ui.lockLabel, lesson.Config.UsesHeadset ? feedback.ui.placeHint : feedback.ui.placeHintDesktop);
             markers.Show();
             grab.SetGrabbable(true);
         }
 
-        public void Tick(LessonTimeline.PauseSchedule p)
+        public void Tick()
         {
             if (phase == Phase.Idle) return;
-            double since = SincePause;
 
             if (phase == Phase.Place && hand != null)
             {
@@ -118,12 +146,13 @@ namespace Study.Lesson
                 if (h.Length > 1e-6) SetPlaced(h.Normalized());
             }
 
-            if (phase == Phase.Place && since >= p.placementDeadline) TimeOutPlacement(p);
-            if (phase == Phase.Predict && since >= p.predictionDeadline) TimeOutPrediction(p);
-            if ((phase == Phase.Place || phase == Phase.Predict || phase == Phase.Gate) && since >= p.rotationDeadline) TimeOutRotation(p);
+            if (phase == Phase.Watch && SincePause >= watchAt) PlayScriptedArc();
             if (phase == Phase.Finishing && !animator.IsPlaying) phase = Phase.Done;
-            if (phase == Phase.Done && !feedbackShown && (!task.measurementDemo || since >= p.measurementDemoEnd)) ShowFeedback();
+            if (phase == Phase.Done && !feedbackShown && !feedbackHeld) ShowFeedback();
         }
+
+        // Pause 4: the measurement demo has run; the feedback can follow.
+        public void ReleaseFeedback() => feedbackHeld = false;
 
         public void End()
         {
@@ -138,11 +167,24 @@ namespace Study.Lesson
             index = -1;
         }
 
-        // The panel's one button: Lock in while placing, the gate afterwards.
+        // The panel's one button: Lock in for either question, the gate afterwards.
         void OnButton()
         {
-            if (phase == Phase.Place) LockPlacement(false);
+            if (phase == Phase.Place && HandsOn) LockPlacement();
+            else if (phase == Phase.Place && selected != null) PickPlacement(selected);
+            else if (phase == Phase.Predict && selected != null) LockAnswer(selected);
             else if (phase == Phase.Gate) PlayGate();
+        }
+
+        // A pick on the panel (Cond 2's placement list, or the P(0) answers): it lights up
+        // and can still be changed; Lock in commits it.
+        void OnChoice(string picked)
+        {
+            if (phase != Phase.Predict && !(phase == Phase.Place && !HandsOn)) return;
+            selected = picked;
+            panel.SelectChoice(picked);
+            panel.ShowGateButton(feedback.ui.lockLabel, feedback.ui.chooseHint);
+            Log(phase == Phase.Place ? "placement_select" : "prediction_select", $"choice={picked}");
         }
 
         // A marker pick snaps the prediction vector to that state; it still has to be locked in.
@@ -160,82 +202,76 @@ namespace Study.Lesson
             predictionVector.ShowDirection(QubitAt(direction));
         }
 
-        void LockPlacement(bool auto)
+        // Cond 2: the locked list choice is the placement. The dim vector shows it.
+        void PickPlacement(string choice)
+        {
+            touched = true;
+            SetPlaced(PauseFeedback.PlacementChoiceVector(task, choice));
+            predictionVector.SetVisible(true);
+            Log("placement_pick", $"choice={choice}");
+            LockPlacement();
+        }
+
+        // Locks wherever the vector points, moved or not (not moving it is an answer too).
+        void LockPlacement()
         {
             hand = null;
             grab.SetGrabbable(false);
             markers.Hide();
-            locked = touched;
-            if (locked)
-            {
-                double error = PauseFeedback.PlacementErrorDegrees(task, placed);
-                placementCorrect = error <= placementToleranceDegrees;
-                placedNear = PauseFeedback.NearestNamedState(placed, namedStateSnapDegrees);
-                Log("placement_locked", $"x={placed.X:F3} y={placed.Y:F3} z={placed.Z:F3} error={error:F1} " +
-                                        $"correct={(placementCorrect ? 1 : 0)} near={placedNear ?? "none"} auto={(auto ? 1 : 0)} rt={SincePause:F3}");
-            }
-            else
-            {
-                predictionVector.SetVisible(false); // nothing was predicted, so nothing to compare against
-                Log("placement_timeout", "");
-            }
+            double error = PauseFeedback.PlacementErrorDegrees(task, placed);
+            placementCorrect = error <= placementToleranceDegrees;
+            // A list pick is exact: only a named state itself gets that state's misconception.
+            placedNear = PauseFeedback.NearestNamedState(placed, HandsOn ? namedStateSnapDegrees : 1);
+            Log("placement_locked", $"x={placed.X:F3} y={placed.Y:F3} z={placed.Z:F3} error={error:F1} " +
+                                    $"correct={(placementCorrect ? 1 : 0)} near={placedNear ?? "none"} moved={(touched ? 1 : 0)} rt={SincePause:F3}");
             EnterPredict();
-        }
-
-        void TimeOutPlacement(LessonTimeline.PauseSchedule p)
-        {
-            lesson.Record($"pause{PauseNumber} placement deadline", onset + p.placementDeadline);
-            LockPlacement(true);
         }
 
         void EnterPredict()
         {
             phase = Phase.Predict;
+            selected = null;
             string[] labels = Array.ConvertAll(task.choices, c => AnswerText(task, c));
             panel.ShowPrediction(feedback.ui.predictTitle, feedback.Task(task.id).prompt, task.choices, labels, null);
         }
 
-        void OnAnswer(string picked)
+        void LockAnswer(string picked)
         {
-            if (phase != Phase.Predict) return;
             answer = picked;
             Log("prediction_response", $"answer={picked} rt={SincePause:F3}");
             panel.LockChoice(picked, string.Format(feedback.ui.lockedLine, AnswerText(task, picked)));
-            EnterGate(feedback.ui.gateHint);
+            if (HandsOn) EnterGate();
+            else EnterWatch();
         }
 
-        void TimeOutPrediction(LessonTimeline.PauseSchedule p)
+        // Cond 2: no gate button; the turn plays by itself.
+        void EnterWatch()
         {
-            Log("prediction_timeout", "");
-            lesson.Record($"pause{PauseNumber} prediction timeout", onset + p.predictionDeadline);
-            panel.RemovePrompt(feedback.ui.turnTitle);
-            EnterGate(feedback.ui.timeoutHint);
+            phase = Phase.Watch;
+            watchAt = SincePause + WatchDelay;
         }
 
-        void EnterGate(string hintText)
+        void PlayScriptedArc()
+        {
+            lesson.Record($"pause{PauseNumber} scripted arc", lesson.Time);
+            BeginArc(onset + watchAt);
+        }
+
+        void EnterGate()
         {
             phase = Phase.Gate;
-            panel.ShowGateButton(task.operationLabel, hintText);
+            panel.ShowGateButton(task.operationLabel, feedback.ui.gateHint);
         }
 
         void PlayGate()
         {
-            Log("gate_press", "");
-            BeginArc(lesson.Timeline.pauseSchedule.arcDuration, lesson.Time);
-            Log("rotation_complete", "by=gate_press");
+            Log("gate_press", $"rt={SincePause:F3}");
             lesson.Record($"pause{PauseNumber} gate pressed", lesson.Time);
+            BeginArc(lesson.Now);
         }
 
-        void TimeOutRotation(LessonTimeline.PauseSchedule p)
-        {
-            double scheduled = onset + p.rotationDeadline;
-            if (phase == Phase.Place) LockPlacement(true);
-            Log("rotation_timeout", "gate_pressed=0");
-            lesson.Record($"pause{PauseNumber} timeout arc", scheduled);
-            BeginArc(p.timeoutArcMaxDuration, scheduled);
-        }
-
-        void BeginArc(double duration, double startTime)
+        // startTime: on lesson.Now.
+        void BeginArc(double startTime)
         {
             phase = Phase.Finishing;
             grab.SetGrabbable(false);
@@ -243,14 +279,14 @@ namespace Study.Lesson
             // Pause 4: nothing to say until the demo has run. Otherwise the panel says what to watch.
             if (task.measurementDemo) panel.Hide();
             else panel.ShowRotateHint(feedback.ui.turnTitle, feedback.ui.rotateHint);
-            animator.Play(Gate.FromName(task.gate), duration, startTime);
+            animator.Play(Gate.FromName(task.gate), lesson.Timeline.pauseSchedule.arcDuration, startTime);
         }
 
-        // Both answers: the title is correct only when both are, neutral when neither was given.
+        // Both answers: the title is correct only when both are.
         void ShowFeedback()
         {
             feedbackShown = true;
-            PauseFeedback.Choice place = feedback.ForPlacement(task, locked, placementCorrect, placedNear);
+            PauseFeedback.Choice place = feedback.ForPlacement(task, true, placementCorrect, placedNear);
             PauseFeedback.Choice chance = feedback.For(task, answer);
             bool anyWrong = place.Tone == PauseFeedback.Tone.Incorrect || chance.Tone == PauseFeedback.Tone.Incorrect;
             bool allRight = place.Tone == PauseFeedback.Tone.Correct && chance.Tone == PauseFeedback.Tone.Correct;
@@ -258,7 +294,7 @@ namespace Study.Lesson
             string title = allRight ? feedback.ui.correctTitle : anyWrong ? feedback.ui.incorrectTitle : feedback.ui.neutralTitle;
             string lockedText = answer == null ? null : string.Format(feedback.ui.lockedLine, AnswerText(task, answer));
             panel.ShowFeedback(tone, title, place.Text + "\n\n" + chance.Text, lockedText);
-            Log("feedback_shown", $"type={chance.Type} id={chance.Id} place_type={place.Type} place_id={place.Id}");
+            Log("feedback_shown", $"type={chance.Type} id={chance.Id} place_type={place.Type} place_id={place.Id} rt={SincePause:F3}");
         }
 
         // From QubitGrabTarget (or the dev simulator). handPoint: the grab point in Bloch
@@ -266,7 +302,7 @@ namespace Study.Lesson
         // vector points at it.
         public void GrabStarted(string mode, Func<BlochVector> handPoint)
         {
-            if (phase != Phase.Place || hand != null) return;
+            if (phase != Phase.Place || hand != null || !HandsOn) return;
             hand = handPoint;
             touched = true;
             Log("grab_start", $"mode={mode}");
@@ -282,8 +318,8 @@ namespace Study.Lesson
         void Log(string type, string fields) =>
             StudyEvents.Log(lesson.Time, type, $"pause={PauseNumber} {fields}".TrimEnd());
 
-        // The state whose Bloch vector points along a unit direction (also used by MeasurementSandbox).
-        internal static Qubit QubitAt(BlochVector direction) =>
+        // The state whose Bloch vector points along a unit direction.
+        static Qubit QubitAt(BlochVector direction) =>
             Qubit.FromBlochAngles(Math.Acos(Math.Max(-1, Math.Min(1, direction.Z))), Math.Atan2(direction.Y, direction.X));
 
         // How an answer reads on screen: "50%" for P(0) tasks, "|+i⟩" for positions.

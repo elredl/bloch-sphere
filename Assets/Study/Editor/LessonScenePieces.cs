@@ -91,7 +91,7 @@ namespace Study.EditorTools
             return target;
         }
 
-        // Condition 3 prompt and feedback panel, upper left of the sphere: the histogram
+        // Prompt and feedback panel (all conditions), upper left of the sphere: the histogram
         // panel's mirror image. Canvas units are mm. 240 x 270 mm:
         //   title 240-262, body from 36 below the top, answer row 100-134,
         //   hint 56-94, gate button 12-50 (feedback: body down to 48, answer line 12-40).
@@ -101,7 +101,7 @@ namespace Study.EditorTools
             var canvasObject = new GameObject("Prediction Panel", typeof(RectTransform));
             var canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
-            canvasObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+            canvasObject.AddComponent<PointerSupport>(); // controller ray, or the mouse in Condition 1
             var group = canvasObject.AddComponent<CanvasGroup>();
             var rect = (RectTransform)canvasObject.transform;
             rect.sizeDelta = new Vector2(W, H);
@@ -125,12 +125,13 @@ namespace Study.EditorTools
             TextMeshProUGUI hint = Text(rect, "Hint", "", 13, 12, 56, W - 12, 94, TextAlignmentOptions.BottomLeft);
             hint.textWrappingMode = TextWrappingModes.Normal;
 
-            var buttons = new Button[5];
-            var frames = new Image[5];
-            var fills = new Image[5];
-            var labels = new TextMeshProUGUI[5];
-            const float bw = 40, gap = 4f; // five across the 216 mm text width
-            for (int i = 0; i < 5; i++)
+            // Six slots across the 216 mm text width; the panel spreads the ones a question uses.
+            var buttons = new Button[6];
+            var frames = new Image[6];
+            var fills = new Image[6];
+            var labels = new TextMeshProUGUI[6];
+            const float gap = 4f, bw = (216 - 5 * gap) / 6;
+            for (int i = 0; i < 6; i++)
             {
                 float x = 12 + i * (bw + gap);
                 (buttons[i], frames[i], fills[i], labels[i]) = PanelButton(rect, "Choice " + i, x, 100, x + bw, 134, 13);
@@ -157,7 +158,7 @@ namespace Study.EditorTools
             so.FindProperty("gateLabel").objectReferenceValue = gateLabel;
             so.ApplyModifiedProperties();
             view.ApplyStyle();
-            group.alpha = 0; // hidden until a Condition 3 pause
+            group.alpha = 0; // hidden until a pause
             group.interactable = false;
             group.blocksRaycasts = false;
             return view;
@@ -230,6 +231,143 @@ namespace Study.EditorTools
             so.ApplyModifiedProperties();
             view.ApplyStyle();
             group.alpha = 0; // hidden until a demo starts
+            return view;
+        }
+
+        // Next button, right of the sphere below the histogram panel, inside the same free band
+        // of the desktop frame. Shown during every pause in all conditions. Canvas units are mm.
+        public static NextButtonView AddNextButton(StylePalette palette, Vector3 sphereCenter, Vector3 eye)
+        {
+            const float W = 120, H = 44;
+            var canvasObject = new GameObject("Next Button", typeof(RectTransform));
+            var canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvasObject.AddComponent<PointerSupport>(); // controller ray or mouse, whichever this session has
+            var group = canvasObject.AddComponent<CanvasGroup>();
+            var rect = (RectTransform)canvasObject.transform;
+            rect.sizeDelta = new Vector2(W, H);
+            rect.localScale = Vector3.one * 0.001f;
+            rect.position = sphereCenter + new Vector3(0.36f, -0.06f, -0.25f);
+            rect.rotation = Quaternion.LookRotation(rect.position - eye);
+
+            var (button, frame, fill, label) = PanelButton(rect, "Button", 0, 0, W, H, 18);
+            label.text = "NEXT";
+
+            var view = canvasObject.AddComponent<NextButtonView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("palette").objectReferenceValue = palette;
+            so.FindProperty("group").objectReferenceValue = group;
+            so.FindProperty("button").objectReferenceValue = button;
+            so.FindProperty("frame").objectReferenceValue = frame;
+            so.FindProperty("fill").objectReferenceValue = fill;
+            so.FindProperty("label").objectReferenceValue = label;
+            so.ApplyModifiedProperties();
+            view.ApplyStyle();
+            group.alpha = 0; // hidden until a pause
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            return view;
+        }
+
+        // The intro's text box (IntroPanelView), 300 x 300 mm. Two poses: centered in front of
+        // the sphere, or to its right beside a drawing. Canvas units are mm:
+        //   title 260-288, body 150-252, divider 146, answer 60-142, NEXT button 12-46.
+        public static IntroPanelView AddIntroPanel(StylePalette palette, Vector3 sphereCenter, Vector3 eye)
+        {
+            const float W = 300, H = 300;
+            var canvasObject = new GameObject("Intro Panel", typeof(RectTransform));
+            var canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvasObject.AddComponent<PointerSupport>(); // controller ray or mouse, whichever this session has
+            var group = canvasObject.AddComponent<CanvasGroup>();
+            var rect = (RectTransform)canvasObject.transform;
+            rect.sizeDelta = new Vector2(W, H);
+            rect.localScale = Vector3.one * 0.001f;
+            Vector3 center = sphereCenter + new Vector3(0f, 0f, -0.12f);
+            Vector3 side = sphereCenter + new Vector3(0.38f, 0f, -0.25f); // nearer, so it stays in the desktop frame
+            rect.position = center;
+            rect.rotation = Quaternion.LookRotation(center - eye);
+
+            Image background = Box(rect, "Background", 0, 0, W, H);
+            background.raycastTarget = true;
+            Image accentBar = Box(rect, "Accent Bar", 0, 0, 3, H);
+            Image accentLine = Box(rect, "Accent Line", 0, H - 2, W, H);
+            TextMeshProUGUI title = Text(rect, "Title", "", 17, 16, 260, W - 16, 288, TextAlignmentOptions.TopLeft);
+            TextMeshProUGUI body = Text(rect, "Body", "", 15, 16, 150, W - 16, 252, TextAlignmentOptions.TopLeft);
+            body.textWrappingMode = TextWrappingModes.Normal;
+            body.enableAutoSizing = true; // the longest boxes shrink to fit
+            body.fontSizeMin = 10;
+            body.fontSizeMax = 15;
+            Image divider = Box(rect, "Divider", 16, 146, W - 16, 147);
+            TextMeshProUGUI answer = Text(rect, "Answer", "", 15, 16, 60, W - 16, 142, TextAlignmentOptions.TopLeft);
+            answer.textWrappingMode = TextWrappingModes.Normal;
+            answer.enableAutoSizing = true;
+            answer.fontSizeMin = 10;
+            answer.fontSizeMax = 15;
+            var (button, frame, fill, label) = PanelButton(rect, "Next Button", W - 120, 12, W - 16, 46, 16);
+
+            var view = canvasObject.AddComponent<IntroPanelView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("palette").objectReferenceValue = palette;
+            so.FindProperty("group").objectReferenceValue = group;
+            so.FindProperty("background").objectReferenceValue = background;
+            SetArray(so, "accents", accentBar, accentLine);
+            so.FindProperty("title").objectReferenceValue = title;
+            so.FindProperty("body").objectReferenceValue = body;
+            so.FindProperty("divider").objectReferenceValue = divider;
+            so.FindProperty("answer").objectReferenceValue = answer;
+            so.FindProperty("nextButton").objectReferenceValue = button;
+            so.FindProperty("nextFrame").objectReferenceValue = frame;
+            so.FindProperty("nextFill").objectReferenceValue = fill;
+            so.FindProperty("nextLabel").objectReferenceValue = label;
+            // Poses are local to the stage, which sits at the origin when the scene is built.
+            so.FindProperty("centerPosition").vector3Value = center;
+            so.FindProperty("centerRotation").quaternionValue = Quaternion.LookRotation(center - eye);
+            so.FindProperty("sidePosition").vector3Value = side;
+            so.FindProperty("sideRotation").quaternionValue = Quaternion.LookRotation(side - eye);
+            so.ApplyModifiedProperties();
+            view.ApplyStyle();
+            group.alpha = 0; // hidden until the intro shows a box
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            return view;
+        }
+
+        // Narration text, lower left of the sphere: below the prompt panel, which only shows in
+        // pauses (when this is hidden). Same width, inside the desktop frame. Canvas units are mm.
+        public static CaptionPanelView AddCaptionPanel(StylePalette palette, Vector3 sphereCenter, Vector3 eye)
+        {
+            const float W = 240, H = 170;
+            var canvasObject = new GameObject("Caption Panel", typeof(RectTransform));
+            var canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            var group = canvasObject.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            var rect = (RectTransform)canvasObject.transform;
+            rect.sizeDelta = new Vector2(W, H);
+            rect.localScale = Vector3.one * 0.001f;
+            rect.position = sphereCenter + new Vector3(-0.38f, -0.125f, -0.25f);
+            rect.rotation = Quaternion.LookRotation(rect.position - eye);
+
+            Image background = Box(rect, "Background", 0, 0, W, H);
+            Image accentBar = Box(rect, "Accent Bar", 0, 0, 3, H);
+            TextMeshProUGUI body = Text(rect, "Body", "", 13, 12, 10, W - 12, H - 10, TextAlignmentOptions.TopLeft);
+            body.textWrappingMode = TextWrappingModes.Normal;
+            body.enableAutoSizing = true; // the longest lines shrink to fit
+            body.fontSizeMin = 9;
+            body.fontSizeMax = 13;
+
+            var view = canvasObject.AddComponent<CaptionPanelView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("palette").objectReferenceValue = palette;
+            so.FindProperty("group").objectReferenceValue = group;
+            so.FindProperty("background").objectReferenceValue = background;
+            SetArray(so, "accents", accentBar);
+            so.FindProperty("body").objectReferenceValue = body;
+            so.ApplyModifiedProperties();
+            view.ApplyStyle();
+            group.alpha = 0; // hidden until the lesson starts
             return view;
         }
 

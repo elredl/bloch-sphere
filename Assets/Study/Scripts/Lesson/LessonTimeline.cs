@@ -33,24 +33,14 @@ namespace Study.Lesson
             public double pauseStart; // narration ends, silent pause begins
             public double pauseEnd;   // pause ends, next segment's narration begins
             public string task;       // id of the PauseTask run in this pause
-            // Cond 3 explores freely instead (MeasurementSandbox): its scripted events in this
-            // segment are skipped. The events still define what Cond 1 / 2 see.
-            public bool sandbox;
         }
 
-        // Times inside every pause, in seconds from pause onset. One set for all pauses.
+        // Settings shared by every pause.
         [Serializable]
         public class PauseSchedule
         {
-            public double pauseLength;
-            public double scriptedArcStart;       // Cond 1/2: axis appears and arc runs
-            public double arcDuration;
-            public double placementDeadline;      // Cond 3: question 1, place the predicted end state
-            public double predictionDeadline;     // Cond 3: question 2, the chance of measuring 0
-            public double rotationDeadline;       // Cond 3: gate not pressed by now, it plays scripted
-            public double timeoutArcMaxDuration;  // Cond 3
-            public double measurementDemoStart;   // pause 4 only, all conditions
-            public double measurementDemoEnd;
+            public double pauseLength;            // silent gap in the narration; Next jumps over it (pauses are untimed)
+            public double arcDuration;            // the turn after the prediction (Cond 3/1: gate press; Cond 2: scripted)
         }
 
         // One scripted moment during narration. Fields used depend on type:
@@ -110,12 +100,7 @@ namespace Study.Lesson
             if (segments == null || events == null || pauseTasks == null) { errors.Add("missing segments, events or pauseTasks"); return errors; }
 
             PauseSchedule p = pauseSchedule;
-            if (p.scriptedArcStart + p.arcDuration > p.pauseLength) errors.Add("scripted arc runs past the end of the pause");
-            if (p.rotationDeadline + p.timeoutArcMaxDuration > p.measurementDemoStart)
-                errors.Add("timeout arc can overlap the measurement demo");
-            if (p.measurementDemoEnd > p.pauseLength) errors.Add("measurement demo runs past the end of the pause");
-            if (p.placementDeadline <= 0 || p.placementDeadline > p.predictionDeadline) errors.Add("placement deadline must come before the prediction deadline");
-            if (p.predictionDeadline > p.rotationDeadline) errors.Add("prediction deadline after rotation deadline");
+            if (p.arcDuration <= 0) errors.Add("arcDuration must be positive");
             if (reprepareDuration <= 0) errors.Add("reprepareDuration must be positive");
 
             double previousEnd = 0;
@@ -153,7 +138,7 @@ namespace Study.Lesson
                 if (e.type == "measure_demo")
                 {
                     if (e.shots <= 0) errors.Add($"measure_demo needs shots: {e}");
-                    end = e.t + (p.measurementDemoEnd - p.measurementDemoStart);
+                    end = e.t + MeasurementDemo.Duration;
                 }
                 if ((e.type == "show" || e.type == "hide") && Array.IndexOf(KnownTargets, e.target) < 0)
                     errors.Add($"unknown target at {e}");

@@ -13,13 +13,14 @@ namespace Study.Lesson
     //
     //                      Cond 1    Cond 2    Cond 3
     //   display            desktop   Quest 3   Quest 3
-    //   learner rotates    no        no        yes
-    //   prediction prompt  no        no        yes
-    //   feedback           no        no        yes
-    //   pause dimming      no        no        yes
-    //   explore segment    no        no        yes   (a "sandbox" segment: free gates,
-    //                                                  turning and measuring instead of
-    //                                                  the segment's scripted events)
+    //   hands on sphere    yes       no        yes   (place the prediction by moving a
+    //                                                  vector, press the gate; mouse in
+    //                                                  Cond 1, controllers in Cond 3)
+    //
+    // Prediction questions, feedback and pause dimming are the same in every
+    // condition, so they have no switch here. Cond 2 answers the placement question
+    // from a list and watches the turn. Cond 1 vs 3 isolates the display, Cond 2 vs 3
+    // the hands-on sphere.
     public sealed class ConditionConfig
     {
         public readonly Condition Condition;
@@ -30,11 +31,7 @@ namespace Study.Lesson
         }
 
         public bool UsesHeadset => Condition != Condition.Desktop2D;
-        public bool LearnerRotates => Condition == Condition.EmbodiedVR;
-        public bool ShowsPredictionPrompt => Condition == Condition.EmbodiedVR;
-        public bool ShowsFeedback => Condition == Condition.EmbodiedVR;
-        public bool DimsAtPauses => Condition == Condition.EmbodiedVR;
-        public bool ExploresSandbox => Condition == Condition.EmbodiedVR;
+        public bool LearnerRotates => Condition != Condition.PassiveVR;
 
         // Set once per session (the launch screen does this from allocation.csv in
         // Checkpoint 6). Null until then; the lesson falls back to its dev setting.

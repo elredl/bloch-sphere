@@ -12,6 +12,11 @@ namespace Study.Lesson
     // All timing comes from LessonClock (the audio position), never from frame
     // counting, so pacing cannot drift from the narration. The same schedule
     // runs in every condition; only PauseDirector behaves differently.
+    // Pauses are learner-paced and untimed: at a pause the narration stops and
+    // lesson time stands still until the learner presses Next (SkipPause), then
+    // the narration carries on from the pause's end. Animations run on Now, which
+    // keeps going while a pause waits, so nothing in a pause depends on how long
+    // it takes. Real time on task varies; every pause's length is logged.
     // Runs first so Config is set before any other component's Awake reads it.
     [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(AudioSource))]
@@ -43,8 +48,17 @@ namespace Study.Lesson
         public LessonTimeline Timeline { get; private set; }
         public ConditionConfig Config { get; private set; }
         public double Time => clock != null ? clock.Time : 0;
+        // Animation time: lesson time plus the time spent waiting in pauses (less the
+        // pause lengths jumped over), so it never stops or jumps while lesson time does.
+        public double Now => Time + holdOffset;
+        public double ToNow(double lessonTime) => lessonTime + holdOffset;
         public bool IsRunning => running;
         public bool OnBreak { get; private set; }
+        // Index of the pause in progress, -1 during narration.
+        public int CurrentPause { get; private set; } = -1;
+        public bool InPause => CurrentPause >= 0;
+        // No recorded clip: the beeping stand-in plays and NarrationCaptions shows the script.
+        public bool UsesPlaceholderNarration { get; private set; }
 #if UNITY_EDITOR
         public float DevPlaybackSpeed => devPlaybackSpeed;
 #else
@@ -61,6 +75,11 @@ namespace Study.Lesson
         bool started; // narration has started (lesson time exists), until the lesson ends or is aborted
         readonly StringBuilder report = new StringBuilder();
         double maxLateness;
+        bool skipRequested;
+        bool holding;        // in a pause: narration stopped, waiting for Next
+        double holdOffset;   // Now - Time
+        double holdStart;    // Now at the pause onset
+        double pausedTotal;  // Now seconds spent in pauses
 
         struct ScheduledItem
         {
@@ -95,11 +114,9 @@ namespace Study.Lesson
             if (narration == null)
             {
                 narration = PlaceholderNarration.Create(Timeline);
+                UsesPlaceholderNarration = true;
                 Debug.LogWarning("[Lesson] No narration clip assigned: using the generated placeholder.");
             }
-            double demoWindow = Timeline.pauseSchedule.measurementDemoEnd - Timeline.pauseSchedule.measurementDemoStart;
-            if (MeasurementDemo.Duration > demoWindow)
-                errors.Add($"measurement demo takes {MeasurementDemo.Duration}s but its window is {demoWindow}s");
             if (Math.Abs(narration.length - Timeline.lessonDuration) > 0.5)
                 errors.Add($"narration clip is {narration.length:F2}s but the timeline lasts {Timeline.lessonDuration:F2}s");
             if (errors.Count > 0)
@@ -115,9 +132,9 @@ namespace Study.Lesson
             if (devPlaybackSpeed > 3f) frameClockSpeed = devPlaybackSpeed;
 #endif
             clock = new LessonClock(source, frameClockSpeed);
-            animator.Clock = () => clock.Time;
-            effects.Clock = () => clock.Time;
-            flash.Clock = () => clock.Time;
+            animator.Clock = () => Now;
+            effects.Clock = () => Now;
+            flash.Clock = () => Now;
             source.clip = narration;
             source.pitch = 1f;
 #if UNITY_EDITOR
@@ -179,7 +196,7 @@ namespace Study.Lesson
             else
             {
                 UnityEngine.Time.timeScale = timeScaleBeforeBreak;
-                source.UnPause();
+                if (!holding) source.UnPause();
             }
         }
 
@@ -192,30 +209,67 @@ namespace Study.Lesson
             if (OnBreak) UnityEngine.Time.timeScale = timeScaleBeforeBreak;
             OnBreak = false;
             started = false;
+            skipRequested = false;
+            holding = false;
+            CurrentPause = -1;
             Debug.Log($"[Lesson] {Config} aborted at lesson time {LessonTimeline.Seconds(clock.Time)}");
         }
 
         void Update()
         {
             if (!running) return;
-            clock.Tick(UnityEngine.Time.unscaledDeltaTime, OnBreak);
+            clock.Tick(UnityEngine.Time.unscaledDeltaTime, OnBreak || holding);
             if (OnBreak) return;
+            if (holding) holdOffset += UnityEngine.Time.unscaledDeltaTime * clock.Rate;
+            if (skipRequested) ApplySkip();
             while (nextItem < schedule.Count && schedule[nextItem].Time <= clock.Time)
             {
                 ScheduledItem item = schedule[nextItem++];
-                FinishTransitionsEndingBy(item.Time);
+                FinishTransitionsEndingBy(ToNow(item.Time));
                 Record(item.Label, item.Time);
                 item.Fire();
             }
         }
 
+        // Next button: end the current pause. Applied at the start of the next Update,
+        // so the pause offset fires before anything else (PauseDirector) sees the new time.
+        public bool SkipPause()
+        {
+            if (!running || OnBreak || !InPause) return false;
+            skipRequested = true;
+            return true;
+        }
+
+        void ApplySkip()
+        {
+            skipRequested = false;
+            if (!InPause) return;
+            LessonTimeline.Segment s = Timeline.segments[CurrentPause];
+            double length = Now - holdStart;
+            pausedTotal += length;
+            Record($"pause{CurrentPause + 1} next", clock.Time);
+            StudyEvents.Log(clock.Time, "pause_next", $"pause={CurrentPause + 1} in_pause={length:F3}");
+            holdOffset -= s.pauseEnd - clock.Time; // Now carries on smoothly across the jump
+            holding = false;
+            SeekTo(s.pauseEnd);
+            if (s.pauseEnd < narration.length - 0.01) source.UnPause();
+        }
+
+        // Moves the narration and lesson time forward. Everything scheduled up to the new
+        // time fires in order on this frame, as after a hitch.
+        void SeekTo(double seconds)
+        {
+            // The last pause ends the clip: stop the audio rather than seek past its end.
+            if (seconds >= narration.length - 0.01) source.Stop();
+            else if (!clock.IsFrameClock) source.time = (float)seconds;
+            clock.Jump(seconds);
+        }
+
 #if UNITY_EDITOR
         // Editor only: jump the narration forward to take screenshots of late moments.
-        // Everything scheduled before the new time fires in order, as after a hitch.
         public void DevSeek(double seconds)
         {
-            source.time = (float)seconds;
-            clock.DevSeek(seconds);
+            SeekTo(seconds);
             Debug.LogWarning($"[Lesson] Dev seek to {seconds:F1}s (Editor only).");
         }
 #endif
@@ -249,17 +303,21 @@ namespace Study.Lesson
                 {
                     StudyEvents.Log(clock.Time, "pause_onset", $"pause={index + 1} task={task.id} scheduled={s.pauseStart:F3}");
                     CheckLiveStartState(index, task);
-                    PauseStarted?.Invoke(index, s, task, s.pauseStart);
+                    CurrentPause = index;
+                    holding = true;
+                    holdStart = Now;
+                    source.Pause();
+                    PauseStarted?.Invoke(index, s, task, Now);
                 });
                 Add(s.pauseEnd, 0, $"pause{index + 1} offset", () =>
                 {
                     StudyEvents.Log(clock.Time, "pause_offset", $"pause={index + 1} scheduled={s.pauseEnd:F3}");
+                    CurrentPause = -1;
                     PauseEnded?.Invoke(index);
                 });
             }
             foreach (LessonTimeline.LessonEvent e in t.events)
             {
-                if (Config.ExploresSandbox && InSandbox(e.t)) continue; // MeasurementSandbox runs this stretch instead
                 Add(e.t, 3, "event " + e.type + " " + e.state + e.gate + e.target, () => Fire(e));
             }
             Add(t.lessonDuration, 4, "lesson end", EndLesson);
@@ -275,10 +333,6 @@ namespace Study.Lesson
             if (effects.IsBusy && effects.ScheduledEnd <= time) effects.Complete();
         }
 
-        // Narration part of a sandbox segment (the pause after it is never a sandbox).
-        bool InSandbox(double time) =>
-            Array.Exists(Timeline.segments, s => s.sandbox && time >= s.start && time < s.pauseStart);
-
         void Add(double time, int order, string label, Action fire) =>
             schedule.Add(new ScheduledItem { Time = time, Order = order, Label = label, Fire = fire });
 
@@ -287,11 +341,11 @@ namespace Study.Lesson
             switch (e.type)
             {
                 case "set_state":
-                    effects.Reprepare(Qubit.FromName(e.state), e.t, Timeline.reprepareDuration);
+                    effects.Reprepare(Qubit.FromName(e.state), ToNow(e.t), Timeline.reprepareDuration);
                     break;
                 case "apply_gate":
                     // Scheduled start, so a late frame shortens nothing and delays nothing.
-                    animator.Play(Gate.FromName(e.gate), e.duration, e.t);
+                    animator.Play(Gate.FromName(e.gate), e.duration, ToNow(e.t));
                     break;
                 case "show":
                 case "hide":
@@ -338,7 +392,7 @@ namespace Study.Lesson
         void EndLesson()
         {
             running = false;
-            StudyEvents.Log(clock.Time, "lesson_end", $"max_late_ms={maxLateness * 1000:F1}");
+            StudyEvents.Log(clock.Time, "lesson_end", $"max_late_ms={maxLateness * 1000:F1} paused_s={pausedTotal:F3}");
             started = false;
             float realSeconds = UnityEngine.Time.realtimeSinceStartup - realStartTime;
             var pauses = new StringBuilder();
@@ -347,7 +401,7 @@ namespace Study.Lesson
             Debug.Log(report.ToString());
             Debug.Log($"[Pacing] {Config} SUMMARY lessonTime={LessonTimeline.Seconds(clock.Time)} " +
                       $"scheduledTotal={LessonTimeline.Seconds(Timeline.lessonDuration)} pauses={pauses}" +
-                      $"maxLateness={maxLateness * 1000:F1}ms real={realSeconds:F1}s at {devSpeedForReport}x");
+                      $"maxLateness={maxLateness * 1000:F1}ms paused={pausedTotal:F1}s real={realSeconds:F1}s at {devSpeedForReport}x");
             LessonEnded?.Invoke();
         }
     }

@@ -21,13 +21,6 @@ namespace Study.Tests
         }
 
         [Test]
-        public void Demo_FitsTheTimelineWindow()
-        {
-            var t = LessonTimeline.FromJson(File.ReadAllText("Assets/Study/Data/lesson_timeline.json"));
-            Assert.LessOrEqual(MeasurementDemo.Duration, t.pauseSchedule.measurementDemoEnd - t.pauseSchedule.measurementDemoStart);
-        }
-
-        [Test]
         public void Validate_RejectsShowingThePanelWithoutADemo()
         {
             var t = LessonTimeline.FromJson(File.ReadAllText("Assets/Study/Data/lesson_timeline.json"));

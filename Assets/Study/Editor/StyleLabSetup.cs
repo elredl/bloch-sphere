@@ -24,6 +24,8 @@ namespace Study.EditorTools
         const string LaunchScenePath = "Assets/Study/Scenes/Launch.unity";
         const string TimelinePath = "Assets/Study/Data/lesson_timeline.json";
         const string FeedbackPath = "Assets/Study/Data/pause_feedback.json";
+        const string CaptionsPath = "Assets/Study/Data/narration_captions.json";
+        const string IntroTextPath = "Assets/Study/Data/intro_text.json";
 
         // Seated participant: eye about 1.2 m above the floor. The sphere center sits
         // 0.25 m below eye level and 0.8 m forward. Calibration (SessionFlow) moves the
@@ -150,13 +152,14 @@ namespace Study.EditorTools
             var animator = sphere.AddComponent<GateArcAnimator>();
             Set(animator, "state", state);
             sphere.AddComponent<SphereDimmer>();
-            AddChild<SphereFrameView>(sphere, "Frame");
+            var frame = AddChild<SphereFrameView>(sphere, "Frame");
             AddChild<AngleArcsView>(sphere, "Angle Arcs");
             AddChild<ArcTrailView>(sphere, "Arc Trail");
             AddChild<GateAxisView>(sphere, "Gate Axis");
             AddChild<GateBadgeView>(sphere, "Gate Badge");
             var arrow = AddChild<GateDirectionView>(sphere, "Direction Arrow");
             var markers = AddChild<PositionMarkersView>(sphere, "Position Markers");
+            Set(markers, "frame", frame);
             var vectorView = AddChild<StateVectorView>(sphere, "State Vector");
             var ghost = AddChild<StateVectorView>(sphere, "Ghost Vector");
             var ghostSo = new SerializedObject(ghost);
@@ -217,13 +220,23 @@ namespace Study.EditorTools
             Set(demo, "panel", panel);
             Set(lesson, "demo", demo);
 
+            var captionPanel = LessonScenePieces.AddCaptionPanel(palette, SphereCenter, DefaultEye);
+            captionPanel.transform.SetParent(stage.transform, true);
+            var captions = lessonObject.AddComponent<NarrationCaptions>();
+            Set(captions, "lesson", lesson);
+            Set(captions, "panel", captionPanel);
+            Set(captions, "captionsJson", AssetDatabase.LoadAssetAtPath<TextAsset>(CaptionsPath));
+
             var director = lessonObject.AddComponent<PauseDirector>();
             Set(director, "lesson", lesson);
             Set(director, "animator", animator);
             Set(director, "dimmer", sphere.GetComponent<SphereDimmer>());
             Set(director, "demo", demo);
+            var nextButton = LessonScenePieces.AddNextButton(palette, SphereCenter, DefaultEye);
+            nextButton.transform.SetParent(stage.transform, true);
+            Set(director, "nextButton", nextButton);
 
-            // Condition 3: prompt/feedback panel, markers, arrow and the grab (inactive in Cond 1/2).
+            // Prompt/feedback panel and markers (all conditions); arrow and grab (Condition 3 only).
             var predictionPanel = LessonScenePieces.AddPredictionPanel(palette, SphereCenter, DefaultEye);
             predictionPanel.transform.SetParent(stage.transform, true);
             var embodied = lessonObject.AddComponent<EmbodiedPause>();
@@ -237,18 +250,37 @@ namespace Study.EditorTools
             Set(embodied, "grab", grab);
             Set(embodied, "predictionVector", prediction);
 
-            // Condition 3: the measurement segment's free exploration (inactive in Cond 1/2).
-            var sandbox = lessonObject.AddComponent<MeasurementSandbox>();
-            Set(sandbox, "lesson", lesson);
-            Set(sandbox, "state", state);
-            Set(sandbox, "animator", animator);
-            Set(sandbox, "effects", effects);
-            Set(sandbox, "palette", predictionPanel);
-            Set(sandbox, "chart", panel);
-            Set(sandbox, "grab", grab);
-            Set(grab, "sandbox", sandbox);
             Set(embodied, "feedbackJson", AssetDatabase.LoadAssetAtPath<TextAsset>(FeedbackPath));
             Set(director, "embodied", embodied);
+
+            // The intro before the narrated lesson (all conditions): a board facing the viewer
+            // for the formula and the plane, a sphere drawn with the real sphere's orientation,
+            // and the text box. Inactive until IntroSequence runs it.
+            var introRoot = new GameObject("Intro");
+            introRoot.transform.SetParent(stage.transform, false);
+            introRoot.transform.position = SphereCenter;
+            Set(introRoot.AddComponent<BlochSphereRig>(), "palette", palette);
+            var board = AddChild<IntroBoardView>(introRoot, "Board");
+            var drawnSphereRoot = new GameObject("Drawn Sphere");
+            drawnSphereRoot.transform.SetParent(introRoot.transform, false);
+            drawnSphereRoot.transform.rotation = sphere.transform.rotation;
+            Set(drawnSphereRoot.AddComponent<BlochSphereRig>(), "palette", palette);
+            var drawnSphere = AddChild<IntroSphereView>(drawnSphereRoot, "Drawing");
+            var introPanel = LessonScenePieces.AddIntroPanel(palette, SphereCenter, DefaultEye);
+            introPanel.transform.SetParent(stage.transform, true);
+            var intro = lessonObject.AddComponent<IntroSequence>();
+            Set(intro, "root", introRoot);
+            Set(intro, "board", board);
+            Set(intro, "drawnSphere", drawnSphere);
+            Set(intro, "panel", introPanel);
+            Set(intro, "realSphere", sphere);
+            Set(intro, "realState", state);
+            Set(intro, "realVector", vectorView);
+            Set(intro, "ghost", ghost);
+            Set(intro, "animator", animator);
+            Set(intro, "textJson", AssetDatabase.LoadAssetAtPath<TextAsset>(IntroTextPath));
+            introRoot.SetActive(false);
+
             LessonScenePieces.AddEventSystem();
 
             // Headset rig (inactive in the saved scene) and the switch between it and the desktop camera.
@@ -269,7 +301,7 @@ namespace Study.EditorTools
             var orientation = SessionScenePieces.AddOrientation(sessionObject, palette, stage.transform, SphereCenter, DefaultEye);
             var overlay = SessionScenePieces.AddOverlay(palette);
             var end = SessionScenePieces.AddEndScreen(sessionObject, palette);
-            SessionScenePieces.AddSessionFlow(sessionObject, lesson, director, embodied, stage.transform, sphere,
+            SessionScenePieces.AddSessionFlow(sessionObject, lesson, director, embodied, intro, stage.transform, sphere,
                 xrOrigin, interactors, orientation, overlay, end);
             styler.Apply(); // style the XR camera's background too
 

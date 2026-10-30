@@ -35,20 +35,25 @@ The headset and desktop versions differ only where the input or device differs.
 - Sphere labels: |0⟩, |1⟩, x, y; angle labels θ and φ when the angles are shown.
 - Measurement panel (pause 4 and the scripted measurement demos): title MEASUREMENTS, a
   shot counter such as 37 / 100, bar labels |0⟩ and |1⟩ with their counts.
+- Next button (every pause, once the prediction is over): NEXT.
 
-## Pause prompts and feedback (Condition 3 only)
+## Pause prompts and feedback (all conditions)
 
-Panel titles and hints:
+Panel titles and hints. positionHint is the headset wording, positionHintDesktop the
+Condition 1 wording. gateHint, timeoutHint, rotateHint and the gate button: Condition 3
+only. watchHint: Conditions 1 and 2 only.
 
 | Key | Text |
 |---|---|
 | predictTitle | PREDICT |
 | turnTitle | TURN |
 | positionHint | Point at a marker on the sphere and pull the trigger. |
+| positionHintDesktop | Click a marker on the sphere. |
 | lockedLine | Your prediction: {0} |
 | gateHint | Press the button to apply the turn. |
 | timeoutHint | Time to apply the turn. Press the button. |
 | rotateHint | Grab the tip of the vector and turn it the way the arrow points. Let go when it stops. |
+| watchHint | Watch the turn. |
 | correctTitle | CORRECT |
 | incorrectTitle | NOT QUITE |
 | neutralTitle | RESULT |

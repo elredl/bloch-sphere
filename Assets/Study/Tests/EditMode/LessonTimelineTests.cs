@@ -132,23 +132,23 @@ namespace Study.Tests
             var c2 = new ConditionConfig(Condition.PassiveVR);
             var c3 = new ConditionConfig(Condition.EmbodiedVR);
             Assert.IsFalse(c1.UsesHeadset); Assert.IsTrue(c2.UsesHeadset); Assert.IsTrue(c3.UsesHeadset);
-            foreach (var c in new[] { c1, c2 })
-            {
-                Assert.IsFalse(c.LearnerRotates);
-                Assert.IsFalse(c.ShowsPredictionPrompt);
-                Assert.IsFalse(c.ShowsFeedback);
-                Assert.IsFalse(c.DimsAtPauses);
-                Assert.IsFalse(c.ExploresSandbox);
-            }
-            Assert.IsTrue(c3.LearnerRotates && c3.ShowsPredictionPrompt && c3.ShowsFeedback && c3.DimsAtPauses && c3.ExploresSandbox);
+            // Cond 1 and 3 work the sphere by hand (mouse, controllers); Cond 2 answers from lists.
+            Assert.IsTrue(c1.LearnerRotates); Assert.IsFalse(c2.LearnerRotates); Assert.IsTrue(c3.LearnerRotates);
         }
 
+        // Cond 2 places from a list: each pause's list holds exactly one correct placement,
+        // judged the same way as a dragged one.
         [Test]
-        public void RealTimeline_OnlyTheMeasurementSegmentIsASandbox()
+        public void PlacementLists_HoldExactlyOneCorrectChoice()
         {
             LessonTimeline t = Load();
-            for (int i = 0; i < t.segments.Length; i++)
-                Assert.AreEqual(t.segments[i].id == "measurement", t.segments[i].sandbox, t.segments[i].id);
+            foreach (var task in t.pauseTasks)
+            {
+                int correct = 0;
+                foreach (string c in PauseFeedback.PlacementChoices(task))
+                    if (PauseFeedback.PlacementErrorDegrees(task, PauseFeedback.PlacementChoiceVector(task, c)) <= 20) correct++;
+                Assert.AreEqual(1, correct, task.id);
+            }
         }
     }
 }

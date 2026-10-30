@@ -22,9 +22,15 @@ Unity, change the render pipeline (URP 17.6), or change packages without asking.
 ## The experimental invariant (most important rule)
 
 The three conditions are identical in narration audio, segment order, segment
-content, pause count, pause length, and total time on task. They differ only in
-display, whether the learner manipulates the qubit, prediction prompts, and
-feedback. Shared lesson content changes apply to all three conditions. Flag any
+content, pause count, and maximum pause length. Pauses are learner-paced (see
+Next button below), so actual pause length and total time on task vary per
+learner and are logged; the Next button itself is the same in every condition.
+They differ only in
+display and whether the learner manipulates the qubit. Prediction prompts,
+feedback and pause dimming are identical in all three conditions (decided
+2026-10-29, so that Cond 2 vs Cond 3 isolates the hand interaction instead of
+bundling it with prediction and feedback). Shared lesson content changes apply
+to all three conditions. Flag any
 feature that would make one condition longer, shorter, or show different
 content before building it.
 
@@ -32,9 +38,9 @@ content before building it.
 |---|---|---|---|
 | Display | desktop monitor, 1920x1080, 60 Hz, mouse | Meta Quest 3 | Meta Quest 3 |
 | Narration, order, pauses | identical | identical | identical |
-| State changes | scripted animation | scripted animation | learner ratchet-rotates the qubit |
-| Prediction prompt | none | none | before each pause operation |
-| Feedback | none | none | misconception-targeted |
+| Pause operation | scripted arc after the prediction | scripted arc after the prediction | learner ratchet-rotates the qubit |
+| Prediction prompt | same, mouse | same, controller ray | same, controller ray |
+| Feedback | misconception-targeted | misconception-targeted | misconception-targeted |
 
 Conditions 2 and 3 are one build with the Cond 3 interaction absent in Cond 2.
 Condition 1 is a desktop build of the same lesson.
@@ -42,8 +48,9 @@ Condition 1 is a desktop build of the same lesson.
 Known, accepted differences (report in the paper, do not "fix"):
 - Cond 1 has a fixed viewpoint; the HMD conditions allow head motion. This is
   part of the display manipulation.
-- Cond 1/2 learners watch about 40 s of a static sphere in each pause. Time on
-  task stays equal; what differs is what the learner does with that time.
+- Cond 1/2 learners watch the turn (about 3 s) where Cond 3 learners make it
+  (gate press and grab), so the pause is busier in Cond 3 and pause length
+  under Next may differ by condition (`pause_skipped` records it).
 
 ## Lesson content
 
@@ -60,6 +67,13 @@ placeholder clip is used and everything is driven by a data-driven timeline
 the real narration means replacing the clip and editing timestamps only. The draft
 script, timed against the timeline and checked by `tools/narration_script.py`, is
 `docs/NARRATION_SCRIPT.md`.
+
+While the placeholder plays, the script is shown as text (all conditions): the
+current line, by lesson time, in a panel lower left of the sphere, hidden in
+pauses (the prompt panel sits above it). Kets are written as symbols (|0>, not
+"ket zero"). The lines come from `Assets/Study/Data/narration_captions.json`,
+which `tools/narration_script.py` writes. Assigning a recorded clip turns the
+text off. Whether the real lesson keeps captions is an open design decision.
 
 Pause length tuning: run internal dry runs with labmates first. If more than
 about 1 in 5 Cond 3 attempts time out, lengthen all four pauses by the same
@@ -99,7 +113,8 @@ amount, then freeze.
 ### Prediction format
 
 - Six positions (pauses 2, 3): the learner points the controller ray at one of
-  six glowing, labeled markers on the sphere and pulls the trigger. Each marker
+  six glowing, labeled markers on the sphere and pulls the trigger (Cond 1:
+  clicks one with the mouse). Each marker
   is a ring in its axis color with its own ket label at full brightness; they
   appear only while the prompt is open.
 - P(0) (pauses 1, 4): five buttons on a panel.
@@ -108,29 +123,43 @@ amount, then freeze.
   grabs the vector. Orientation (Checkpoint 6) practises both.
 - The prompt and feedback share one panel, upper left of the sphere (the
   histogram's mirror image), 240 x 270 mm. Title PREDICT while the prompt is
-  open, TURN from the gate press (or the prediction timeout), then CORRECT /
-  NOT QUITE / RESULT for feedback.
+  open, TURN from the gate press (or the prediction timeout; Cond 1/2: while
+  the arc plays, "Watch the turn."), then CORRECT / NOT QUITE / RESULT for
+  feedback.
 
 ### Pause schedule (times from pause onset, identical every pause)
 
 | Time | Cond 3 | Cond 1 / 2 |
 |---|---|---|
-| 0 s | sphere dims, prompt appears | nothing |
-| 15-18 s | (learner working) | axis appears, scripted arc |
-| 25 s | prediction deadline: if unanswered, prompt removed, `prediction_timeout` logged, gate unlocks anyway | |
+| 0 s | sphere dims, prompt appears | same |
+| answer | answer locks, gate button appears | answer locks; 1 s later axis appears, scripted arc (3 s) |
+| 25 s | prediction deadline: if unanswered, prompt removed, `prediction_timeout` logged, gate unlocks anyway | same; scripted arc at 26 s |
 | 35 s | rotation deadline: remaining rotation plays as a scripted arc (<= 3 s), `rotation_timeout` logged | |
-| on completion | feedback shown until 60 s (pauses 1-3); pause 4 hides the panel until its feedback | |
-| 40-51 s | pause 4 only: measurement demo, all conditions | same |
-| 51-60 s | pause 4 only: feedback (Cond 3) | |
-| 60 s | undim, narration resumes | narration resumes |
+| on completion | feedback shown until 60 s (pauses 1-3); pause 4 hides the panel until its feedback | same |
+| 40-51 s | pause 4 only: measurement demo | same |
+| 51-60 s | pause 4 only: feedback | same |
+| 60 s | undim, narration resumes | same |
 
 - Never skip the rotation: the end state must match the other conditions.
 - Feedback always appears. With no prediction, show the neutral explanation of
   the correct result (no correct/incorrect framing), logged as feedback type
   `no_prediction`.
-- After dry runs give a median Cond 3 completion time, move the Cond 1/2 15 s
-  arc start to that time, then freeze.
-- Cond 1/2 show nothing else in the pause: no dimming, no prompt, no cues.
+- Cond 1/2 show nothing beyond Cond 3's prompt, feedback and dimming: no gate
+  button, no direction arrow, no grab.
+
+### Next button (all conditions)
+
+- A NEXT button to the right of the sphere, below the measurement panel. It
+  appears once the prediction is over (answer locked, or the 25 s deadline
+  passed), so the question can't be skipped, and stays until the pause ends. Controller ray in the headset (Cond 2 gets its
+  rays only during pauses), mouse on the desktop (the cursor shows only during
+  pauses).
+- Pressing it ends the pause at once: the narration jumps to the pause's end
+  and the next segment starts. Whatever in the pause has not happened yet is
+  skipped (the turn, feedback, pause 4 measurement demo); the
+  pause operation snaps to its result so the end state is still the same.
+- Logged as `pause_skipped` (pause, seconds into the pause, seconds skipped);
+  `lesson_end` carries the total skipped as `skipped_s`.
 
 ### Gate press, direction and tolerance (Cond 3)
 
@@ -138,7 +167,7 @@ amount, then freeze.
   ("H", "Quarter turn about z"). Pressing it shows the axis and direction
   arrow and unlocks the grab. This is the `gate_press` event. Cond 1/2 have no
   button at all (gate presses are 0 by design); the axis just appears when the
-  scripted arc starts.
+  scripted arc starts, 1 s after the prediction is over.
 - Only the positive (right-hand rule) direction counts. The grab is a ratchet:
   it turns one way about the axis and stops at the target angle (no overshoot).
   A curved arrow shows the direction; a light haptic tick fires on pushes the
@@ -165,8 +194,8 @@ amount, then freeze.
   controller within 15 cm of the tip is logged as `near`, otherwise `ray`.
 - The grab handle exists in the shared Cond 2/3 build but only switches on in
   Cond 3, and only between the gate press and the end of the rotation.
-- Cond 2 learners see their controllers (same as Cond 3) but get no pointer
-  rays and nothing to interact with (confirmed at Checkpoint 3 review).
+- Cond 2 learners see their controllers (same as Cond 3); their pointer rays
+  switch on only during pauses, for the prediction and the Next button.
 
 ### Measurement demo
 
@@ -204,8 +233,8 @@ amount, then freeze.
 ## Visual design
 
 The Bloch sphere is the whole show. Tron-like: glowing structures and neon
-lines against darkness. Identical in all conditions except Cond 3 pause
-dimming (and the Cond 3 prompt/feedback panels themselves).
+lines against darkness. Identical in all conditions, pause dimming and the
+prompt/feedback panel included; only Cond 3 has the direction arrow.
 
 ### Style tokens
 
@@ -221,6 +250,7 @@ ScriptableObject. No hard-coded colors elsewhere.
 | X axis | orange `#FF9E1B` | |
 | Y axis | violet `#A970FF` | |
 | Z axis | cyan `#00F0FF`, brightest axis | \|0> and \|1> labels at the poles |
+| Equator states | x orange / y violet | \|+>, \|->, \|+i>, \|-i> labeled from the start (decided 2026-10-29), just above the surface; hidden while the position markers show their own |
 | State vector | white-hot core, magenta `#FF2E88` glow | brightest object, tip marker |
 | Gate rotation axis | dashed glowing amber `#FFE14D` | only while a gate is applied |
 | Gate arc trail | amber `#FFE14D`, fading tail | |
@@ -241,7 +271,7 @@ red vs green; never color alone (pair with labels or shape).
   never vary with probability.
 - Measurement: a single short collapse flash and a snap to a pole, no trail.
   Rotation always has the trail.
-- Cond 3 pause dimming: sphere emission to about 30 %, state vector and active
+- Pause dimming (all conditions): sphere emission to about 30 %, state vector and active
   gate axis stay at full brightness.
 - Size: 0.6 m diameter. Placement is calibrated per participant (see Session
   flow): center 0.25 m below eye level, 0.8 m forward. Same framing in all
@@ -271,7 +301,7 @@ red vs green; never color alone (pair with labels or shape).
   is one build, `Builds/Quest/lesson_nobloom.apk`, read from `[Frames]` log lines.
 - No flashing faster than 3 Hz, no full-field strobes. Measurement flash is a
   single short pulse localized to the sphere.
-- Cond 3 feedback: cyan for correct, amber for incorrect, always with text.
+- Feedback (all conditions): cyan for correct, amber for incorrect, always with text.
 
 ## Condition 3 interaction (embodied)
 
@@ -299,7 +329,7 @@ achieved frame rate (periodic summary, a check, not tracking).
 CSV, one file per session, flushed after every event. No names or identifying
 information, only codes like P07.
 
-Since Checkpoint 4 the Cond 3 pause events go through `StudyEvents.Log` and
+Since Checkpoint 4 the pause events (all conditions; gate and grab events Cond 3 only) go through `StudyEvents.Log` and
 appear as `[Event]` log lines: `prediction_response` (answer, rt from pause
 onset), `prediction_timeout`, `gate_press`, `grab_start` (mode),
 `grab_end` (angle, target, complete, forced on timeout), `rotation_complete`,
@@ -315,7 +345,7 @@ overwritten. Session events: `session_start` (source allocation/manual, app and
 device), `calibration` (eye height, yaw corrected), `orientation_start`,
 `orientation_step` (select, press, rotate; round), `orientation_grab`,
 `orientation_incomplete`, `orientation_end`, `lesson_start`, `segment_start`,
-`pause_onset`, `pause_offset`, `pause_state_mismatch`, `measurement_demo`,
+`pause_onset`, `pause_offset`, `pause_skipped`, `pause_state_mismatch`, `measurement_demo`,
 `lesson_end`, `break_start` / `break_end` (duration), `hmd_removed` (reason
 app_paused, focus_lost or user_absent; head offset from the calibrated eye) /
 `hmd_returned` (head offset) / `hmd_resume` (duration), `tracking_origin_changed`,
@@ -342,8 +372,9 @@ app_paused, focus_lost or user_absent; head offset from the calibrated eye) /
   Completed steps are logged. Early finishers get free practice until 2:00;
   unfinished is logged as `orientation_incomplete`, never extended.
 - Cond 1 camera: fixed at the calibrated-equivalent eye point, pitched to
-  center the sphere, 60 deg vertical FOV. Cursor hidden during the lesson; the
-  mouse is used only in orientation and on the end screen.
+  center the sphere, 60 deg vertical FOV. Cursor hidden while the narration
+  plays; the mouse is used in orientation, for the Next button in pauses, and
+  on the end screen.
 - Cond 1 display (Checkpoint 5, `DesktopDisplay`): 1920 x 1080 borderless
   fullscreen, vsync on (one frame per refresh at 60 Hz), not resizable,
   cursor hidden and locked from lesson start to lesson end. The app logs a

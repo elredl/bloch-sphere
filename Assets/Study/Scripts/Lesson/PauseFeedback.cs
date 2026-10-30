@@ -20,13 +20,17 @@ namespace Study.Lesson
         {
             public string placeTitle;    // question 1: place the predicted end state
             public string placeHint;
-            public string lockLabel;     // the button that locks the placement in
+            public string placeHintDesktop;    // Cond 1: drag with the mouse
+            public string placeHintList;       // Cond 2: pick a state from the list
+            public string placeHintListHeight; // Cond 2: pick an angle from |0> from the list
+            public string lockLabel;     // the button that locks an answer in
+            public string chooseHint;    // a list answer is picked but not locked in yet
             public string predictTitle;
             public string turnTitle;     // once the prediction is over: gate button, grab
             public string positionHint;
+            public string positionHintDesktop; // Cond 1: mouse instead of controller
             public string lockedLine;   // {0} = the learner's answer
             public string gateHint;
-            public string timeoutHint;
             public string rotateHint;
             public string correctTitle;
             public string incorrectTitle;
@@ -118,7 +122,8 @@ namespace Study.Lesson
         {
             var errors = new List<string>();
             if (ui == null || tasks == null) { errors.Add("missing ui or tasks"); return errors; }
-            foreach (string field in new[] { ui.placeTitle, ui.placeHint, ui.lockLabel, ui.predictTitle, ui.turnTitle, ui.positionHint, ui.lockedLine, ui.gateHint, ui.timeoutHint,
+            foreach (string field in new[] { ui.placeTitle, ui.placeHint, ui.placeHintDesktop, ui.placeHintList, ui.placeHintListHeight, ui.lockLabel, ui.chooseHint,
+                         ui.predictTitle, ui.turnTitle, ui.positionHint, ui.positionHintDesktop, ui.lockedLine, ui.gateHint,
                          ui.rotateHint, ui.correctTitle, ui.incorrectTitle, ui.neutralTitle })
                 if (string.IsNullOrWhiteSpace(field)) errors.Add("a ui text is empty");
             foreach (LessonTimeline.PauseTask task in timeline.pauseTasks)
@@ -175,6 +180,22 @@ namespace Study.Lesson
         }
 
         static double Tilt(BlochVector v) => Math.Acos(Math.Max(-1, Math.Min(1, v.Normalized().Z)));
+
+        // Cond 2 answers question 1 from a list instead of moving the vector: the six named
+        // states for "point" tasks, six angles from |0> (degrees) for "height" tasks. Each
+        // choice stands for a placement, judged like a dragged one.
+        static readonly string[] HeightChoices = { "0", "30", "60", "90", "120", "180" };
+
+        public static string[] PlacementChoices(LessonTimeline.PauseTask task) =>
+            task.placementMatch == "height" ? HeightChoices : NamedStates;
+
+        public static string PlacementChoiceText(LessonTimeline.PauseTask task, string choice) =>
+            task.placementMatch == "height" ? choice + "°" : "|" + choice.Replace("-", "−") + "⟩";
+
+        public static BlochVector PlacementChoiceVector(LessonTimeline.PauseTask task, string choice) =>
+            task.placementMatch == "height"
+                ? Qubit.FromBlochAngles(double.Parse(choice, System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180, 0).Bloch
+                : Qubit.FromName(choice).Bloch;
 
         // The named state within maxDegrees of the placement (always the closest one), or null.
         public static string NearestNamedState(BlochVector placed, double maxDegrees)

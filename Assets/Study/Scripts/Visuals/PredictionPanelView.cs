@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Study.Visuals
 {
-    // Condition 3 panel, upper left of the sphere (the histogram's mirror image):
+    // Prediction panel (all conditions), upper left of the sphere (the histogram's mirror image):
     // the prediction prompt, the five P(0) buttons, the gate button, the rotation
     // hint and the feedback. Built by the editor scene setup; this only switches
     // what is shown and styles it from the palette. Neon on frames and accents
@@ -32,6 +32,8 @@ namespace Study.Visuals
         [SerializeField] Image gateFrame;
         [SerializeField] Image gateFill;
         [SerializeField] TextMeshProUGUI gateLabel;
+        [Tooltip("Answer row in mm: left edge, width and gap; the used buttons share it evenly.")]
+        [SerializeField] Vector3 answerRow = new Vector3(12, 216, 4);
         [Tooltip("Body text rect while prompting (offset from the top, offset from the bottom, mm) and while showing feedback.")]
         [SerializeField] Vector2 promptBodyRange = new Vector2(36, 140);
         [SerializeField] Vector2 feedbackBodyRange = new Vector2(36, 48);
@@ -45,6 +47,7 @@ namespace Study.Visuals
         string[] choices = new string[0];
         Tone tone = Tone.Prompt;
         int lockedIndex = -1;
+        int selectedIndex = -1; // picked but not yet locked in: lit, and still changeable
 
         void OnEnable()
         {
@@ -67,7 +70,8 @@ namespace Study.Visuals
             {
                 int index = i;
                 choiceButtons[i].onClick.AddListener(() => PickChoice(index));
-                AddHover(choiceButtons[i].gameObject, over => SetFrameHover(choiceFrames[index], over && lockedIndex < 0));
+                AddHover(choiceButtons[i].gameObject, over =>
+                    SetFrameHover(choiceFrames[index], (over && lockedIndex < 0) || index == selectedIndex || index == lockedIndex));
             }
             gateButton.onClick.AddListener(PressGate);
             AddHover(gateButton.gameObject, over => SetFrameHover(gateFrame, over));
@@ -75,11 +79,12 @@ namespace Study.Visuals
 
         public bool IsVisible => group.alpha > 0;
 
-        // choiceTexts: the five P(0) answers, or null for a six-position prompt (answers are on the sphere).
+        // choiceTexts: the answers (up to six), or null when the answer is given on the sphere.
         public void ShowPrediction(string titleText, string prompt, string[] choiceValues, string[] choiceTexts, string hintText)
         {
             tone = Tone.Prompt;
             lockedIndex = -1;
+            selectedIndex = -1;
             choices = choiceValues ?? new string[0];
             title.text = titleText;
             SetBody(prompt, promptBodyRange);
@@ -90,6 +95,7 @@ namespace Study.Visuals
                 choiceButtons[i].interactable = used;
                 if (used) choiceLabels[i].text = choiceTexts[i];
             }
+            if (choiceTexts != null) LayOutRow(Mathf.Min(choiceTexts.Length, choiceButtons.Length));
             Show(lockedLine, false);
             hint.text = hintText ?? "";
             Show(hint, !string.IsNullOrEmpty(hintText));
@@ -98,10 +104,33 @@ namespace Study.Visuals
             SetVisible(true);
         }
 
-        // The first answer locks: the chosen button stays lit, the others fade, none respond.
+        void LayOutRow(int count)
+        {
+            float width = (answerRow.y - (count - 1) * answerRow.z) / count;
+            for (int i = 0; i < count; i++)
+            {
+                RectTransform frame = choiceFrames[i].rectTransform;
+                frame.anchoredPosition = new Vector2(answerRow.x + i * (width + answerRow.z), frame.anchoredPosition.y);
+                frame.sizeDelta = new Vector2(width, frame.sizeDelta.y);
+                RectTransform fill = choiceFills[i].rectTransform;
+                fill.sizeDelta = new Vector2(width - 2 * fill.anchoredPosition.x, fill.sizeDelta.y);
+                RectTransform label = choiceLabels[i].rectTransform;
+                label.sizeDelta = new Vector2(width, label.sizeDelta.y);
+            }
+        }
+
+        // A pick before Lock in: that button lights up; the learner can still pick another.
+        public void SelectChoice(string answer)
+        {
+            selectedIndex = Array.IndexOf(choices, answer);
+            ApplyStyle();
+        }
+
+        // Locked in: the chosen button stays lit, the others fade, none respond.
         public void LockChoice(string answer, string lockedText)
         {
             lockedIndex = Array.IndexOf(choices, answer);
+            selectedIndex = -1;
             foreach (Button button in choiceButtons) button.interactable = false;
             if (lockedIndex < 0)
             {
@@ -230,8 +259,9 @@ namespace Study.Visuals
             for (int i = 0; i < choiceButtons.Length; i++)
             {
                 bool faded = lockedIndex >= 0 && i != lockedIndex;
-                choiceFills[i].color = palette.buttonBackground;
-                choiceFrames[i].color = palette.panelAccent * new Color(1, 1, 1, i == lockedIndex ? 1f : faded ? 0.15f : 0.6f);
+                bool chosen = i == lockedIndex || i == selectedIndex;
+                choiceFills[i].color = chosen ? Color.Lerp(palette.buttonBackground, palette.panelAccent, 0.25f) : palette.buttonBackground;
+                choiceFrames[i].color = palette.panelAccent * new Color(1, 1, 1, chosen ? 1f : faded ? 0.15f : 0.6f);
                 choiceLabels[i].font = palette.bodyFont;
                 choiceLabels[i].color = palette.panelText * new Color(1, 1, 1, faded ? 0.35f : 1f);
             }

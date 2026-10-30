@@ -1,0 +1,33 @@
+{
+    "lines": [
+        {"start": 0, "end": 14, "text": "Welcome. In the next fifteen minutes you will learn how a quantum bit, called a qubit, works. You do not need any background in physics or math."},
+        {"start": 14, "end": 40, "text": "An ordinary bit in a computer is always either zero or one. A qubit is different. Until it is measured, it can be in a combination of zero and one. This combination is called a superposition."},
+        {"start": 40, "end": 70, "text": "In front of you is a picture of one qubit. The glowing arrow shows its state. When the arrow points straight up, the qubit is in the state called |0⟩, written with a bar and an angle bracket around the zero. When it points straight down, it is in the state |1⟩."},
+        {"start": 70, "end": 100, "text": "To find out what a qubit holds, we measure it. A measurement always gives one of just two answers: zero or one. If the arrow points straight up, a measurement gives zero every time. If it points straight down, it gives one every time."},
+        {"start": 100, "end": 132, "text": "When the arrow points somewhere in between, the qubit is in a superposition. Then a measurement can give either answer, and which one you get is a matter of chance. The closer the arrow is to the top, the more often you get zero. The closer it is to the bottom, the more often you get one."},
+        {"start": 132, "end": 150, "text": "After each part of this lesson, the narration stops for one minute. Right now the arrow points straight up, at |0⟩. Next, it will get a quarter turn toward |1⟩."},
+        {"start": 210, "end": 243, "text": "This picture is called the Bloch sphere. Every possible state of one qubit is a point on its surface, and the arrow always reaches from the center out to that point. The sphere has three axes. The z axis runs up and down, from |0⟩ at the top to |1⟩ at the bottom."},
+        {"start": 243, "end": 270, "text": "The x and y axes lie flat, across the middle of the sphere, which we call the equator. Where they meet the surface are four more named states. Along x are |+⟩ and |−⟩. Along y are |+i⟩ and |−i⟩."},
+        {"start": 270, "end": 298, "text": "Two angles describe where the arrow points. The angle θ tells how far the arrow has tipped down from the top. The angle φ tells how far it has swung around the equator, starting from the x axis. Right now the arrow points along x, at |+⟩."},
+        {"start": 298, "end": 302, "text": "Watch it turn."},
+        {"start": 302, "end": 336, "text": "Every change to a qubit is a rotation of the arrow about an axis. That was a half turn about the z axis. The arrow swung around the equator, from |+⟩ to |−⟩. Its height did not change, so θ stayed the same. Only φ changed."},
+        {"start": 336, "end": 340, "text": "Here is the same half turn again."},
+        {"start": 343, "end": 358, "text": "The arrow is back at |+⟩. Two half turns about the same axis make one full turn."},
+        {"start": 358, "end": 390, "text": "Every turn has a direction. Point the thumb of your right hand along the axis. Your fingers then curl the way the arrow turns. For the z axis, with your thumb pointing up, that is counterclockwise when seen from above. Next, the arrow at |+⟩ will get a quarter turn about the z axis."},
+        {"start": 450, "end": 478, "text": "In quantum computing, the basic operations on a qubit are called gates. Each gate is a fixed rotation of the arrow. Here are three of them. The arrow has been set back to |0⟩, at the top."},
+        {"start": 478, "end": 481, "text": "The X gate. Watch."},
+        {"start": 483, "end": 508, "text": "The X gate is a half turn about the x axis. It takes |0⟩ at the top to |1⟩ at the bottom. It flips the qubit, like switching an ordinary bit between zero and one."},
+        {"start": 519, "end": 529, "text": "Now the arrow is set to |+⟩, on the equator. The second gate is the Z gate. Watch."},
+        {"start": 533, "end": 556, "text": "The Z gate is a half turn about the z axis. It swings |+⟩ around the equator to |−⟩. Like every turn about z, it changes φ and leaves the height alone."},
+        {"start": 556, "end": 576, "text": "The third gate is called H, after the mathematician Hadamard. H is a half turn about a tilted axis, halfway between the x axis and the z axis."},
+        {"start": 579, "end": 589, "text": "The arrow is set back to |0⟩. Now watch H."},
+        {"start": 593, "end": 630, "text": "H took |0⟩ at the top to |+⟩ on the equator. It turned a definite state into an equal superposition. Gates can be used one after another, and each one is just another turn of the same arrow. The arrow is now at |+⟩. Next, H will be applied again."},
+        {"start": 690, "end": 718, "text": "Now let us look more closely at measurement. A measurement gives zero or one, and it also changes the qubit. Right after the measurement, the arrow points straight at the answer you got: up for zero, down for one."},
+        {"start": 718, "end": 722, "text": "First, an H gate."},
+        {"start": 723, "end": 744, "text": "The arrow is now at |+⟩, on the equator. Measuring it once tells us very little: we get a single zero or a single one."},
+        {"start": 744, "end": 760, "text": "So the same state is prepared again and again, and measured each time. The panel counts the results. Watch."},
+        {"start": 770, "end": 800, "text": "Out of one hundred measurements, about half gave zero and half gave one. Each single result is chance, but over many measurements the counts follow the state."},
+        {"start": 800, "end": 826, "text": "The chance of zero depends on how high the tip of the arrow sits. At the top, every measurement gives zero. On the equator, it is half and half. In between, it follows the height of the tip, not the angle the arrow has turned."},
+        {"start": 826, "end": 840, "text": "Next, the arrow will be set back to |0⟩, get a sixty degree turn toward |1⟩, and then be measured one hundred times."}
+    ]
+}

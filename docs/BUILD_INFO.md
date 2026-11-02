@@ -8,6 +8,15 @@ The condition is never built in: the launch screen takes it from `allocation.csv
 | Quest 3 APK | 2, 3 | `Builds/Quest/lesson.apk` | `StudyBuild.BuildQuest` |
 | Desktop (Linux x86_64) | 1 | `Builds/Desktop/lesson/lesson.x86_64` | `StudyBuild.BuildDesktop` |
 
+In-person demo (not part of the study): a separate app, "Qubit Demo"
+(`edu.colostate.qupacabras.qubitdemo`, own data folder), built from the Demo scene only
+(`StudyBuild.BuildQuestDemo`, output `Builds/QuestDemo/demo.apk`). Condition 3 hands-on:
+calibrate (hold A), trigger, a one-minute lesson (5 boxes, guided X and H turns, a 100-shot
+measurement), then a sandbox (X, Z, H, S, reset to |0⟩, free grab, live chance bars, Measure)
+until DONE; then it starts over at the ready screen for the next visitor. Text in
+`tools/narration_script.py` (DEMO_SCRIPT; run it with `--demo`), see `docs/DEMO_SCRIPT.md`.
+Install: `adb install -r Builds/QuestDemo/demo.apk`.
+
 Run a build from the Editor through the live command runner:
 
     LiveCommands/tools/lc.sh '{"action":"call_static","typeName":"Study.EditorTools.StudyBuild","methodName":"BuildQuest","arg":""}' 3000

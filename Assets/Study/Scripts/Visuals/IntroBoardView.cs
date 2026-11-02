@@ -8,11 +8,12 @@ namespace Study.Visuals
     // The intro's "board" in front of the learner, in this object's x-y plane (facing
     // the viewer), centered where the sphere will be:
     //
-    //   Formula   in four steps, each explained before the next: ℂ²; |ψ⟩ = (α, β) as a
-    //             column with drawn brackets; α = a + b i and β = c + d i; i² = −1
-    //             (i in amber throughout). Each step stays on the board.
+    //   Formula   in steps, each explained before the next: |ψ⟩ = (α, β) as a column with
+    //             drawn brackets, |0⟩ and |1⟩ beside its rows; α = a + b i and β = c + d i;
+    //             i² = −1 (i in amber throughout). Each step stays on the board.
     //   Plane     a grid, x and y axes, and the vector to (a, b) with its components:
     //             ℝ², two real numbers, drawn in
+    //   Norm      |α|² + |β|² = 1
     //
     //   Unitary   U|ψ⟩ = |ψ′⟩ and its matrix form, left of the (real) sphere
     //
@@ -23,7 +24,7 @@ namespace Study.Visuals
         const float GridStep = 0.05f;
         static readonly Vector2 Tip = new Vector2(0.15f, 0.10f); // the (a, b) vector
 
-        Part formula, plane, unitary;
+        Part formula, plane, norm, unitary;
         TextMeshPro uEquation, equals;
         readonly List<TextMeshPro> matrixEntries = new List<TextMeshPro>();
         readonly List<TextMeshPro> columnEntries = new List<TextMeshPro>();
@@ -31,7 +32,7 @@ namespace Study.Visuals
         readonly List<Stroke> matrixBrackets = new List<Stroke>();
         readonly List<Stroke> columnBrackets = new List<Stroke>();
         readonly List<Stroke> resultBrackets = new List<Stroke>();
-        TextMeshPro title, ket, alpha, beta, alphaDef, betaDef, iSquared;
+        TextMeshPro ket, alpha, beta, zeroTag, oneTag, alphaDef, betaDef, iSquared, normText;
         Stroke leftBracket, rightBracket;
         readonly List<Stroke> grid = new List<Stroke>();
         Stroke xAxis, yAxis, arrow, arrowHeadA, arrowHeadB, toX, toY;
@@ -43,7 +44,6 @@ namespace Study.Visuals
             string i = $"<color={Hex(p.gateAxis.color)}>i</color>";
 
             formula = new Part();
-            title = AddText(formula, "ℂ²", p.panelAccent, new Vector3(0, 0.22f, 0), 0.09f);
             ket = AddText(formula, "|ψ⟩ =", p.panelText, new Vector3(-0.20f, 0.025f, 0), 0.06f);
             leftBracket = AddStroke(formula, "Left Bracket", p.referenceRings, new List<Vector3>
                 { new Vector3(-0.05f, 0.10f, 0), new Vector3(-0.08f, 0.10f, 0), new Vector3(-0.08f, -0.05f, 0), new Vector3(-0.05f, -0.05f, 0) }, false);
@@ -51,6 +51,8 @@ namespace Study.Visuals
                 { new Vector3(0.05f, 0.10f, 0), new Vector3(0.08f, 0.10f, 0), new Vector3(0.08f, -0.05f, 0), new Vector3(0.05f, -0.05f, 0) }, false);
             alpha = AddText(formula, "α", p.panelText, new Vector3(0, 0.06f, 0), 0.055f);
             beta = AddText(formula, "β", p.panelText, new Vector3(0, -0.01f, 0), 0.055f);
+            zeroTag = AddText(formula, "|0⟩", p.panelAccent, new Vector3(0.15f, 0.06f, 0), 0.04f);
+            oneTag = AddText(formula, "|1⟩", p.panelAccent, new Vector3(0.15f, -0.01f, 0), 0.04f);
             alphaDef = AddText(formula, $"α = a + b{i}", p.panelText, new Vector3(0, -0.14f, 0), 0.05f);
             betaDef = AddText(formula, $"β = c + d{i}", p.panelText, new Vector3(0, -0.22f, 0), 0.05f);
             iSquared = AddText(formula, $"{i}² = −1", p.gateAxis.color, new Vector3(0, -0.32f, 0), 0.05f);
@@ -80,6 +82,9 @@ namespace Study.Visuals
             aLabel = AddText(plane, "a", p.panelText, new Vector3(tip.x, -0.03f, 0), 0.035f);
             bLabel = AddText(plane, "b", p.panelText, new Vector3(-0.03f, tip.y, 0), 0.035f);
             tipLabel = AddText(plane, "(a, b)", p.vectorGlow, tip + new Vector3(0.05f, 0.03f, 0), 0.035f);
+
+            norm = new Part();
+            normText = AddText(norm, "|α|² + |β|² = 1", p.panelText, new Vector3(0, 0.02f, 0), 0.06f);
 
             // Left of the sphere and nearer the viewer, clear of it and inside the desktop frame:
             // U|ψ⟩ = |ψ′⟩ over its matrix form, U (2 x 2) times (α, β) = (α′, β′).
@@ -136,19 +141,15 @@ namespace Study.Visuals
         public IEnumerator FadeUnitary(float seconds) => Fade(unitary, 1, 0, seconds);
 
         // The formula comes in one idea at a time; IntroSequence explains each before the next.
-        // Steps 1 to 4: about 2, 4, 4.5 and 2 s.
-        public IEnumerator DrawSpace()
-        {
-            SetOpacity(formula, 1);
-            yield return Write(title, 1.8f);
-        }
-
+        // Steps 1 to 3: about 5, 4.5 and 2 s.
         public IEnumerator DrawState()
         {
+            SetOpacity(formula, 1);
             yield return Write(ket, 1.4f);
             yield return Together(Grow(1.6f, leftBracket, rightBracket),
                                   Delayed(0.9f, Write(alpha, 0.9f)),
                                   Delayed(1.5f, Write(beta, 0.9f)));
+            yield return Together(Write(zeroTag, 0.8f), Delayed(0.4f, Write(oneTag, 0.8f)));
         }
 
         public IEnumerator DrawComplex()
@@ -182,5 +183,13 @@ namespace Study.Visuals
         public IEnumerator FadeFormula(float seconds) => Fade(formula, 1, 0, seconds);
 
         public IEnumerator FadePlane(float seconds) => Fade(plane, 1, 0, seconds);
+
+        public IEnumerator DrawNorm()
+        {
+            SetOpacity(norm, 1);
+            yield return Write(normText, 2.0f);
+        }
+
+        public IEnumerator FadeNorm(float seconds) => Fade(norm, 1, 0, seconds);
     }
 }

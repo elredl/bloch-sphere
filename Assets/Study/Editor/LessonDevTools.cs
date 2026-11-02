@@ -141,14 +141,15 @@ namespace Study.EditorTools
             return "seek " + arg;
         }
 
-        // Play Mode: the same path as clicking NEXT in a pause, or on the intro's text box.
+        // Play Mode: the same path as clicking NEXT in a pause or after a step, or on a text box
+        // (intro or lesson).
         public static string PressNext(string arg)
         {
             var introPanel = Object.FindAnyObjectByType<IntroPanelView>();
             if (introPanel != null && introPanel.IsShowing)
             {
                 introPanel.Press();
-                return "intro next pressed";
+                return "text box next pressed";
             }
             var next = Object.FindAnyObjectByType<NextButtonView>();
             var lesson = Object.FindAnyObjectByType<LessonController>();
@@ -236,12 +237,28 @@ namespace Study.EditorTools
             return failed.Count == 0 ? "trashed " + arg : "could not trash: " + string.Join(", ", failed);
         }
 
-        // Play Mode. Reports lesson time, audio position and running state.
+        // Play Mode, Demo scene. arg = "X" (a gate's index on the palette, e.g. "0" for X), "measure"
+        // or "done": the same paths as the visitor's clicks.
+        public static string Sandbox(string arg)
+        {
+            var sandbox = Object.FindAnyObjectByType<DemoSandbox>();
+            if (sandbox == null || !sandbox.IsActive) return "no sandbox running";
+            var palette = Object.FindAnyObjectByType<PredictionPanelView>();
+            if (arg == "measure") palette.PressGate();
+            else if (arg == "done") Object.FindAnyObjectByType<NextButtonView>().Press();
+            else palette.PickChoice(int.Parse(arg));
+            var state = Object.FindAnyObjectByType<QubitState>();
+            return $"sandbox {arg}: state {state.Current.Bloch} p0={state.Current.ProbabilityZero:F2}";
+        }
+
+        // Play Mode. Reports lesson time, running state and what lesson time is holding for.
         public static string Status()
         {
             var lesson = Object.FindAnyObjectByType<LessonController>();
             if (lesson == null || lesson.Config == null) return "no lesson running";
-            return $"{lesson.Config} running={lesson.IsRunning} lessonTime={lesson.Time:F2}";
+            var turn = Object.FindAnyObjectByType<GuidedTurn>();
+            return $"{lesson.Config} running={lesson.IsRunning} lessonTime={lesson.Time:F2} hold={lesson.Holding} " +
+                   $"pause={lesson.CurrentPause} readyForNext={lesson.ReadyForNext} turnActive={(turn != null && turn.Active)}";
         }
     }
 }

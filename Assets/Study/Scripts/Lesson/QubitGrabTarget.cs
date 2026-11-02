@@ -9,13 +9,14 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 namespace Study.Lesson
 {
     // The grab handle at the tip of the prediction vector while the learner places a
-    // prediction (Conditions 1 and 3; present but switched off in Condition 2). In the
+    // prediction (Conditions 1 and 3; present but switched off in Condition 2), and at the
+    // tip of the state vector while a Condition 3 learner makes a lesson turn (GuidedTurn). In the
     // headset grabbing works up close and by ray, so the seated learner never leans:
     // the grab point is fixed to the controller like the end of a stick, so with a ray
     // it sits out at the sphere and pointing moves it. On the desktop the learner
     // presses the mouse on the tip and drags; the grab point is where the mouse ray
     // meets the sphere (as PracticeGrab). Each frame the grab point goes to
-    // EmbodiedPause, which points the prediction vector at it.
+    // EmbodiedPause, which points the prediction vector at it, or to GuidedTurn.
     public class QubitGrabTarget : MonoBehaviour
     {
         // A grab that starts with the controller this close to the tip counts as "near".
@@ -27,6 +28,9 @@ namespace Study.Lesson
         [SerializeField] XRSimpleInteractable interactable;
         [SerializeField] Collider grabCollider;
         [SerializeField] EmbodiedPause pause;
+        [SerializeField] GuidedTurn turn;
+        [Tooltip("Demo scene only.")]
+        [SerializeField] DemoSandbox sandbox;
         [Tooltip("Wrong-way haptic tick: light and short.")]
         [SerializeField] float tickAmplitude = 0.25f;
         [SerializeField] float tickSeconds = 0.03f;
@@ -43,7 +47,8 @@ namespace Study.Lesson
 
         void Start()
         {
-            Debug.Log($"[Grab] {lesson.Config}: grab handle present, usable={lesson.Config.LearnerRotates} (only while placing a prediction)");
+            Debug.Log($"[Grab] {lesson.Config}: grab handle present, usable={lesson.Config.LearnerRotates} " +
+                      $"(placing a prediction{(lesson.Config.LearnerMakesTurns ? ", lesson turns" : "")})");
         }
 
         void OnEnable()
@@ -86,11 +91,16 @@ namespace Study.Lesson
 
         void Started(string mode, System.Func<BlochVector> point)
         {
-            pause.GrabStarted(mode, point);
+            if (sandbox != null && sandbox.IsActive) sandbox.GrabStarted(mode, point);
+            else if (turn != null && turn.Active) turn.GrabStarted(mode, point);
+            else pause.GrabStarted(mode, point);
         }
 
+        // Both: whichever has the grab lets go; the other ignores it.
         void Ended()
         {
+            if (sandbox != null) sandbox.GrabEnded();
+            if (turn != null) turn.GrabEnded();
             pause.GrabEnded();
         }
 

@@ -14,6 +14,7 @@
         "lockedLine": "Your prediction: {0}",
         "gateHint": "Press the button to apply the turn.",
         "rotateHint": "Watch the turn. The dim vector is your prediction.",
+        "turnGuide": "Squeeze the grip to grab the tip of the arrow, then turn it the way the amber guide points. Let go when it stops.",
         "correctTitle": "CORRECT",
         "incorrectTitle": "NOT QUITE",
         "neutralTitle": "RESULT"
@@ -43,17 +44,17 @@
             "prompt": "After a quarter turn toward |1⟩, how often will a measurement give 0?",
             "correct": "Yes, 50%: on the equator, 0 and 1 are equally likely.",
             "noPrediction": "50%: on the equator, 0 and 1 are equally likely.",
-            "genericIncorrect": "It is 50%: on the equator, 0 and 1 are equally likely.",
+            "genericIncorrect": "A quarter turn from the top lands on the equator, where 0 and 1 are equally likely.",
             "misconceptions": [
                 {
                     "id": "rotation_does_not_change_outcome",
                     "answers": ["100"],
-                    "text": "It is 50%: the turn moved the vector to the equator."
+                    "text": "A quarter turn from the top lands on the equator, where 0 and 1 are equally likely."
                 },
                 {
                     "id": "quarter_turn_reaches_one",
                     "answers": ["0"],
-                    "text": "It is 50%: a quarter turn stops at the equator, not |1⟩."
+                    "text": "A quarter turn from the top lands on the equator, where 0 and 1 are equally likely."
                 }
             ]
         },
@@ -90,12 +91,12 @@
             "prompt": "After S, how often will a measurement give 0?",
             "correct": "Yes, 50%: S keeps the vector on the equator.",
             "noPrediction": "50%: S keeps the vector on the equator.",
-            "genericIncorrect": "It is 50%: S keeps the vector on the equator.",
+            "genericIncorrect": "S turns about the z axis, so it changes only the phase. The vector stays on the equator, and so does the 50/50 chance.",
             "misconceptions": [
                 {
                     "id": "polar_azimuthal_confusion",
                     "answers": ["100", "0"],
-                    "text": "It is 50%: a turn about z never changes the height."
+                    "text": "S turns about the z axis, so it changes only the phase. The vector stays on the equator, and so does the 50/50 chance."
                 }
             ]
         },
@@ -132,7 +133,7 @@
                 {
                     "id": "h_always_undoes_h",
                     "answers": ["100"],
-                    "text": "It is 0%: after the Z, H gives |1⟩, not |0⟩."
+                    "text": "|−⟩ is not |+⟩. H turns |−⟩ all the way down to |1⟩, so 0 never comes up."
                 },
                 {
                     "id": "h_always_creates_superposition",
@@ -179,7 +180,7 @@
                 {
                     "id": "probability_linear_in_angle",
                     "answers": ["67"],
-                    "text": "75%: chance follows height, not angle."
+                    "text": "60° is a third of the way to |1⟩, but the chance follows height, not angle. The tip sits at height ½, so 0 comes up 3 times out of 4."
                 },
                 {
                     "id": "only_equator_is_superposition",

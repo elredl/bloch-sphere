@@ -9,8 +9,10 @@ namespace Study.Tests
     public class LessonTimelineTests
     {
         const string TimelinePath = "Assets/Study/Data/lesson_timeline.json";
+        const string BoxesPath = "Assets/Study/Data/narration_captions.json";
 
         static LessonTimeline Load() => LessonTimeline.FromJson(File.ReadAllText(TimelinePath));
+        static LessonTimeline.Box[] LoadBoxes() => LessonTimeline.BoxesFromJson(File.ReadAllText(BoxesPath));
 
         [Test]
         public void RealTimeline_IsValid()
@@ -20,13 +22,54 @@ namespace Study.Tests
         }
 
         [Test]
-        public void RealTimeline_HasFourEqualPauses_AndFifteenMinutes()
+        public void RealTimeline_HasFourEqualPauses_AndEndsWithTheLast()
         {
             LessonTimeline t = Load();
             Assert.AreEqual(4, t.segments.Length);
             foreach (var s in t.segments) Assert.AreEqual(60.0, s.pauseEnd - s.pauseStart, 1e-9, s.id);
-            Assert.AreEqual(900.0, t.lessonDuration, 1e-9);
             Assert.AreEqual(t.lessonDuration, t.segments[3].pauseEnd, 1e-9);
+        }
+
+        [Test]
+        public void RealBoxes_AreValid_AndEverySegmentHasSome()
+        {
+            LessonTimeline t = Load();
+            LessonTimeline.Box[] boxes = LoadBoxes();
+            var errors = t.ValidateBoxes(boxes);
+            Assert.IsEmpty(errors, string.Join("\n", errors));
+            foreach (var s in t.segments)
+                Assert.IsTrue(Array.Exists(boxes, b => b.start >= s.start && b.end <= s.pauseStart), s.id);
+        }
+
+        [Test]
+        public void Boxes_RejectAnEventInsideABox()
+        {
+            LessonTimeline t = Load();
+            LessonTimeline.Box[] boxes = LoadBoxes();
+            boxes[0].end = t.events[1].t + 1; // stretch the first box over the second event
+            Assert.IsTrue(t.ValidateBoxes(boxes).Exists(e => e.Contains("event inside")));
+        }
+
+        [Test]
+        public void RealTimeline_NoTurnStartsOnItsOwnAxis()
+        {
+            // Condition 3 makes every turn by hand (GuidedTurn); a state on the axis has nothing to turn.
+            LessonTimeline t = Load();
+            Qubit q = Qubit.Zero;
+            int next = 0;
+            foreach (var s in t.segments)
+            {
+                for (; next < t.events.Length && t.events[next].t < s.pauseStart; next++)
+                {
+                    var e = t.events[next];
+                    if (e.type == "set_state") q = Qubit.FromName(e.state);
+                    if (e.type != "apply_gate") continue;
+                    Gate g = Gate.FromName(e.gate);
+                    Assert.DoesNotThrow(() => new RatchetRotation(q, g, 0.1), e.ToString());
+                    q = g.Apply(q);
+                }
+                q = Gate.FromName(t.Task(s.task).gate).Apply(q);
+            }
         }
 
         [Test]

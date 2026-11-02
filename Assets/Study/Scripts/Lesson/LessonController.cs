@@ -12,17 +12,20 @@ namespace Study.Lesson
     // All timing comes from LessonClock (the audio position), never from frame
     // counting, so pacing cannot drift from the narration. The same schedule
     // runs in every condition; only PauseDirector behaves differently.
-    // Pauses are learner-paced and untimed: at a pause the narration stops and
-    // lesson time stands still until the learner presses Next (SkipPause), then
-    // the narration carries on from the pause's end. Animations run on Now, which
-    // keeps going while a pause waits, so nothing in a pause depends on how long
-    // it takes. Real time on task varies; every pause's length is logged.
+    // The lesson is self-paced: lesson time stops (a hold) at every text box, after
+    // every turn and measurement demo, and at every pause, until the learner presses
+    // Next; then it jumps to the next scheduled item, so nobody waits on lesson time.
+    // A box (narration_captions.json) is shown while it holds. A turn holds until it
+    // is done: played as an arc, or made by the learner in Condition 3 (GuidedTurn).
+    // Animations run on Now, which keeps going while lesson time holds, so nothing
+    // depends on how long a hold lasts. Real time on task varies; every hold is logged.
     // Runs first so Config is set before any other component's Awake reads it.
     [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(AudioSource))]
     public class LessonController : MonoBehaviour
     {
         [SerializeField] TextAsset timelineJson;
+        [SerializeField] TextAsset captionsJson;
         [Tooltip("The recorded narration. Leave empty to use the generated placeholder.")]
         [SerializeField] AudioClip narration;
         [SerializeField] QubitState state;
@@ -31,6 +34,11 @@ namespace Study.Lesson
         [SerializeField] VectorEffects effects;
         [SerializeField] CollapseFlashView flash;
         [SerializeField] MeasurementDemo demo;
+        [Tooltip("Condition 3: the learner makes each turn.")]
+        [SerializeField] GuidedTurn guidedTurn;
+
+        [Tooltip("The in-person demo app (Demo scene): always Condition 3, one segment whose pause is the sandbox (DemoSandbox).")]
+        [SerializeField] bool demoApp;
 
         [Header("Development only")]
         [Tooltip("Editor only: the condition when the Lesson scene is played directly, without the launch screen.")]
@@ -45,8 +53,13 @@ namespace Study.Lesson
         public event Action<LessonTimeline.LessonEvent> MeasurementDemoRequested;
         public event Action LessonEnded;
 
+        // What lesson time is holding for. Box and Step end with Next (NextStep); Pause with
+        // the pause's own Next (SkipPause).
+        public enum Hold { None, Box, Step, Pause }
+
         public LessonTimeline Timeline { get; private set; }
         public ConditionConfig Config { get; private set; }
+        public bool IsDemo => demoApp;
         public double Time => clock != null ? clock.Time : 0;
         // Animation time: lesson time plus the time spent waiting in pauses (less the
         // pause lengths jumped over), so it never stops or jumps while lesson time does.
@@ -57,6 +70,14 @@ namespace Study.Lesson
         // Index of the pause in progress, -1 during narration.
         public int CurrentPause { get; private set; } = -1;
         public bool InPause => CurrentPause >= 0;
+        public Hold Holding => hold;
+        // The text box on screen, null when none is.
+        public LessonTimeline.Box Box => hold == Hold.Box ? boxes[currentBox] : null;
+        // A box or a finished step is waiting for Next. A step is finished once its turn or
+        // demo is: nothing animating, no turn in the learner's hands.
+        public bool ReadyForNext => running && !OnBreak && !nextRequested &&
+                                    (hold == Hold.Box || hold == Hold.Step && !animator.IsPlaying && !effects.IsBusy &&
+                                     !demo.IsRunning && (guidedTurn == null || !guidedTurn.Active));
         // No recorded clip: the beeping stand-in plays and NarrationCaptions shows the script.
         public bool UsesPlaceholderNarration { get; private set; }
 #if UNITY_EDITOR
@@ -76,10 +97,17 @@ namespace Study.Lesson
         readonly StringBuilder report = new StringBuilder();
         double maxLateness;
         bool skipRequested;
-        bool holding;        // in a pause: narration stopped, waiting for Next
+        bool nextRequested;
+        Hold hold;           // lesson time stopped (narration paused), waiting for Next
+        bool holding => hold != Hold.None;
         double holdOffset;   // Now - Time
-        double holdStart;    // Now at the pause onset
+        double holdStart;    // Now at the hold onset
         double pausedTotal;  // Now seconds spent in pauses
+        double stepsTotal;   // Now seconds spent on boxes and steps
+        int boxesDone, stepsDone;
+        string stepLabel;    // the step being held for, for the log
+        LessonTimeline.Box[] boxes;
+        int currentBox = -1;
 
         struct ScheduledItem
         {
@@ -96,7 +124,7 @@ namespace Study.Lesson
             source.loop = false;
             source.spatialBlend = 0f; // narration is not positional
             // Resolved here (not in Begin) so other components can read it in their Start.
-            Config = ConditionConfig.Current ?? new ConditionConfig(devCondition);
+            Config = demoApp ? new ConditionConfig(Condition.EmbodiedVR) : ConditionConfig.Current ?? new ConditionConfig(devCondition);
         }
 
         void OnDestroy()
@@ -108,9 +136,11 @@ namespace Study.Lesson
         public void Begin()
         {
             Timeline = LessonTimeline.FromJson(timelineJson.text);
+            boxes = LessonTimeline.BoxesFromJson(captionsJson.text);
 
-            List<string> errors = Timeline.Validate();
+            List<string> errors = Timeline.Validate(demoApp ? 1 : 4);
             CheckPauseStartStates(errors);
+            errors.AddRange(Timeline.ValidateBoxes(boxes));
             if (narration == null)
             {
                 narration = PlaceholderNarration.Create(Timeline);
@@ -145,7 +175,7 @@ namespace Study.Lesson
             if (devPlaybackSpeed != 1f) Debug.LogWarning($"[Lesson] Dev playback speed {devPlaybackSpeed}x (Editor only" +
                                                          (clock.IsFrameClock ? ", silent frame-time clock)." : ")."));
 #endif
-            Debug.Log($"[Lesson] {Config} ready. {Timeline.segments.Length} segments, {Timeline.segments.Length} pauses x " +
+            Debug.Log($"[Lesson] {Config} ready. {Timeline.segments.Length} segments, {boxes.Length} boxes, {Timeline.segments.Length} pauses x " +
                       $"{Timeline.pauseSchedule.pauseLength}s, {Timeline.events.Length} events, duration {Timeline.lessonDuration}s, " +
                       $"clip '{narration.name}' {narration.length:F3}s");
             StartCoroutine(StartWhenSceneSettles());
@@ -210,7 +240,10 @@ namespace Study.Lesson
             OnBreak = false;
             started = false;
             skipRequested = false;
-            holding = false;
+            nextRequested = false;
+            if (guidedTurn != null) guidedTurn.Cancel();
+            hold = Hold.None;
+            currentBox = -1;
             CurrentPause = -1;
             Debug.Log($"[Lesson] {Config} aborted at lesson time {LessonTimeline.Seconds(clock.Time)}");
         }
@@ -222,7 +255,9 @@ namespace Study.Lesson
             if (OnBreak) return;
             if (holding) holdOffset += UnityEngine.Time.unscaledDeltaTime * clock.Rate;
             if (skipRequested) ApplySkip();
-            while (nextItem < schedule.Count && schedule[nextItem].Time <= clock.Time)
+            if (nextRequested) ApplyNext();
+            // A hold stops the rest: what comes after it waits for Next.
+            while (!holding && nextItem < schedule.Count && schedule[nextItem].Time <= clock.Time)
             {
                 ScheduledItem item = schedule[nextItem++];
                 FinishTransitionsEndingBy(ToNow(item.Time));
@@ -249,10 +284,55 @@ namespace Study.Lesson
             pausedTotal += length;
             Record($"pause{CurrentPause + 1} next", clock.Time);
             StudyEvents.Log(clock.Time, "pause_next", $"pause={CurrentPause + 1} in_pause={length:F3}");
-            holdOffset -= s.pauseEnd - clock.Time; // Now carries on smoothly across the jump
-            holding = false;
-            SeekTo(s.pauseEnd);
-            if (s.pauseEnd < narration.length - 0.01) source.UnPause();
+            Release(s.pauseEnd);
+        }
+
+        // Next on a box or a finished step: lesson time carries on from the next scheduled
+        // item. Applied at the start of the next Update, like SkipPause.
+        public bool NextStep()
+        {
+            if (!ReadyForNext) return false;
+            nextRequested = true;
+            return true;
+        }
+
+        void ApplyNext()
+        {
+            nextRequested = false;
+            if (hold != Hold.Box && hold != Hold.Step) return;
+            double length = Now - holdStart;
+            stepsTotal += length;
+            if (hold == Hold.Box)
+            {
+                boxesDone++;
+                Record($"box{currentBox + 1} next", clock.Time);
+                StudyEvents.Log(clock.Time, "box_next", $"box={currentBox + 1} on_box={length:F3}");
+                currentBox = -1;
+            }
+            else
+            {
+                stepsDone++;
+                Record($"{stepLabel} next", clock.Time);
+                StudyEvents.Log(clock.Time, "step_next", $"step={stepLabel} in_step={length:F3}");
+            }
+            Release(nextItem < schedule.Count ? schedule[nextItem].Time : Timeline.lessonDuration);
+        }
+
+        void StartHold(Hold kind)
+        {
+            hold = kind;
+            holdStart = Now;
+            source.Pause();
+        }
+
+        // Ends a hold and jumps lesson time forward to the given time.
+        void Release(double to)
+        {
+            to = Math.Max(to, clock.Time);
+            holdOffset -= to - clock.Time; // Now carries on smoothly across the jump
+            hold = Hold.None;
+            SeekTo(to);
+            if (to < narration.length - 0.01) source.UnPause();
         }
 
         // Moves the narration and lesson time forward. Everything scheduled up to the new
@@ -304,9 +384,7 @@ namespace Study.Lesson
                     StudyEvents.Log(clock.Time, "pause_onset", $"pause={index + 1} task={task.id} scheduled={s.pauseStart:F3}");
                     CheckLiveStartState(index, task);
                     CurrentPause = index;
-                    holding = true;
-                    holdStart = Now;
-                    source.Pause();
+                    StartHold(Hold.Pause);
                     PauseStarted?.Invoke(index, s, task, Now);
                 });
                 Add(s.pauseEnd, 0, $"pause{index + 1} offset", () =>
@@ -319,6 +397,16 @@ namespace Study.Lesson
             foreach (LessonTimeline.LessonEvent e in t.events)
             {
                 Add(e.t, 3, "event " + e.type + " " + e.state + e.gate + e.target, () => Fire(e));
+            }
+            for (int i = 0; i < boxes.Length; i++)
+            {
+                int index = i;
+                Add(boxes[i].start, 3, $"box{i + 1}", () =>
+                {
+                    currentBox = index;
+                    StartHold(Hold.Box);
+                    StudyEvents.Log(clock.Time, "box_shown", $"box={index + 1} scheduled={boxes[index].start:F3}");
+                });
             }
             Add(t.lessonDuration, 4, "lesson end", EndLesson);
             schedule.Sort((a, b) => a.Time != b.Time ? a.Time.CompareTo(b.Time) : a.Order.CompareTo(b.Order));
@@ -344,8 +432,11 @@ namespace Study.Lesson
                     effects.Reprepare(Qubit.FromName(e.state), ToNow(e.t), Timeline.reprepareDuration);
                     break;
                 case "apply_gate":
+                    stepLabel = "turn_" + e.gate;
+                    if (Config.LearnerMakesTurns) guidedTurn.Begin(Gate.FromName(e.gate), e.duration);
                     // Scheduled start, so a late frame shortens nothing and delays nothing.
-                    animator.Play(Gate.FromName(e.gate), e.duration, ToNow(e.t));
+                    else animator.Play(Gate.FromName(e.gate), e.duration, ToNow(e.t));
+                    StartHold(Hold.Step);
                     break;
                 case "show":
                 case "hide":
@@ -353,7 +444,9 @@ namespace Study.Lesson
                     if (e.target == "measurement_panel" && e.type == "hide") demo.HidePanel();
                     break;
                 case "measure_demo":
+                    stepLabel = "measure_demo";
                     MeasurementDemoRequested?.Invoke(e);
+                    StartHold(Hold.Step);
                     break;
             }
         }
@@ -392,7 +485,8 @@ namespace Study.Lesson
         void EndLesson()
         {
             running = false;
-            StudyEvents.Log(clock.Time, "lesson_end", $"max_late_ms={maxLateness * 1000:F1} paused_s={pausedTotal:F3}");
+            StudyEvents.Log(clock.Time, "lesson_end", $"max_late_ms={maxLateness * 1000:F1} paused_s={pausedTotal:F3} " +
+                                                      $"steps_s={stepsTotal:F3} boxes={boxesDone} steps={stepsDone}");
             started = false;
             float realSeconds = UnityEngine.Time.realtimeSinceStartup - realStartTime;
             var pauses = new StringBuilder();
@@ -401,7 +495,7 @@ namespace Study.Lesson
             Debug.Log(report.ToString());
             Debug.Log($"[Pacing] {Config} SUMMARY lessonTime={LessonTimeline.Seconds(clock.Time)} " +
                       $"scheduledTotal={LessonTimeline.Seconds(Timeline.lessonDuration)} pauses={pauses}" +
-                      $"maxLateness={maxLateness * 1000:F1}ms paused={pausedTotal:F1}s real={realSeconds:F1}s at {devSpeedForReport}x");
+                      $"maxLateness={maxLateness * 1000:F1}ms paused={pausedTotal:F1}s steps={stepsTotal:F1}s real={realSeconds:F1}s at {devSpeedForReport}x");
             LessonEnded?.Invoke();
         }
     }

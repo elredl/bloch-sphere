@@ -26,6 +26,10 @@ namespace Study.EditorTools
         const string FeedbackPath = "Assets/Study/Data/pause_feedback.json";
         const string CaptionsPath = "Assets/Study/Data/narration_captions.json";
         const string IntroTextPath = "Assets/Study/Data/intro_text.json";
+        // The in-person demo app: the Lesson scene built with the demo's data and sandbox.
+        public const string DemoScenePath = "Assets/Study/Scenes/Demo.unity";
+        const string DemoTimelinePath = "Assets/Study/Data/demo_timeline.json";
+        const string DemoCaptionsPath = "Assets/Study/Data/demo_captions.json";
 
         // Seated participant: eye about 1.2 m above the floor. The sphere center sits
         // 0.25 m below eye level and 0.8 m forward. Calibration (SessionFlow) moves the
@@ -42,14 +46,18 @@ namespace Study.EditorTools
         {
             string fonts = EnsureFonts();
             EnsurePalette();
-            BuildLessonScene();
+            BuildLessonScene(demoApp: false);
+            BuildLessonScene(demoApp: true);
             BuildLaunchScene();
             EditorBuildSettings.scenes = new[]
             {
                 new EditorBuildSettingsScene(LaunchScenePath, true),
                 new EditorBuildSettingsScene(ScenePath, true),
+                // Last, so the study's indexes don't move. Only here so the demo can reload itself in
+                // the Editor; the player builds list their own scenes (StudyBuild).
+                new EditorBuildSettingsScene(DemoScenePath, true),
             };
-            return fonts + " | palette, Launch and Lesson scenes built | " + LessonScenePieces.DisableHandTracking() +
+            return fonts + " | palette, Launch, Lesson and Demo scenes built | " + LessonScenePieces.DisableHandTracking() +
                    " | " + StudyBuild.DisableDesktopXr();
         }
 
@@ -132,7 +140,8 @@ namespace Study.EditorTools
             return palette;
         }
 
-        static void BuildLessonScene()
+        // demoApp: the Demo scene (DemoScenePath) for the in-person demo app instead of the study's.
+        static void BuildLessonScene(bool demoApp)
         {
             System.IO.Directory.CreateDirectory("Assets/Study/Scenes");
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -203,7 +212,11 @@ namespace Study.EditorTools
             var lessonObject = new GameObject("Lesson");
             lessonObject.AddComponent<AudioSource>();
             var lesson = lessonObject.AddComponent<LessonController>();
-            Set(lesson, "timelineJson", AssetDatabase.LoadAssetAtPath<TextAsset>(TimelinePath));
+            Set(lesson, "timelineJson", AssetDatabase.LoadAssetAtPath<TextAsset>(demoApp ? DemoTimelinePath : TimelinePath));
+            Set(lesson, "captionsJson", AssetDatabase.LoadAssetAtPath<TextAsset>(demoApp ? DemoCaptionsPath : CaptionsPath));
+            var lessonSo = new SerializedObject(lesson);
+            lessonSo.FindProperty("demoApp").boolValue = demoApp;
+            lessonSo.ApplyModifiedProperties();
             Set(lesson, "state", state);
             Set(lesson, "animator", animator);
             Set(lesson, "angleArcs", sphere.GetComponentInChildren<AngleArcsView>());
@@ -220,12 +233,9 @@ namespace Study.EditorTools
             Set(demo, "panel", panel);
             Set(lesson, "demo", demo);
 
-            var captionPanel = LessonScenePieces.AddCaptionPanel(palette, SphereCenter, DefaultEye);
-            captionPanel.transform.SetParent(stage.transform, true);
             var captions = lessonObject.AddComponent<NarrationCaptions>();
             Set(captions, "lesson", lesson);
-            Set(captions, "panel", captionPanel);
-            Set(captions, "captionsJson", AssetDatabase.LoadAssetAtPath<TextAsset>(CaptionsPath));
+            Set(captions, "introTextJson", AssetDatabase.LoadAssetAtPath<TextAsset>(IntroTextPath));
 
             var director = lessonObject.AddComponent<PauseDirector>();
             Set(director, "lesson", lesson);
@@ -235,6 +245,7 @@ namespace Study.EditorTools
             var nextButton = LessonScenePieces.AddNextButton(palette, SphereCenter, DefaultEye);
             nextButton.transform.SetParent(stage.transform, true);
             Set(director, "nextButton", nextButton);
+            Set(captions, "stepNext", nextButton);
 
             // Prompt/feedback panel and markers (all conditions); arrow and grab (Condition 3 only).
             var predictionPanel = LessonScenePieces.AddPredictionPanel(palette, SphereCenter, DefaultEye);
@@ -253,6 +264,34 @@ namespace Study.EditorTools
             Set(embodied, "feedbackJson", AssetDatabase.LoadAssetAtPath<TextAsset>(FeedbackPath));
             Set(director, "embodied", embodied);
 
+            // Condition 3's lesson turns: the same grab handle and direction guide as the pauses.
+            var turn = lessonObject.AddComponent<GuidedTurn>();
+            Set(turn, "lesson", lesson);
+            Set(turn, "animator", animator);
+            Set(turn, "state", state);
+            Set(turn, "arrow", arrow);
+            Set(turn, "grab", grab);
+            Set(turn, "pause", embodied);
+            Set(grab, "turn", turn);
+            Set(lesson, "guidedTurn", turn);
+            Set(captions, "turn", turn);
+            Set(captions, "pause", embodied);
+
+            if (demoApp)
+            {
+                // The demo's sandbox fills its one pause: gate palette, live chance, Done.
+                var sandbox = lessonObject.AddComponent<DemoSandbox>();
+                Set(sandbox, "lesson", lesson);
+                Set(sandbox, "state", state);
+                Set(sandbox, "animator", animator);
+                Set(sandbox, "effects", effects);
+                Set(sandbox, "palette", predictionPanel);
+                Set(sandbox, "chart", panel);
+                Set(sandbox, "grab", grab);
+                Set(sandbox, "done", nextButton);
+                Set(grab, "sandbox", sandbox);
+            }
+
             // The intro before the narrated lesson (all conditions): a board facing the viewer
             // for the formula and the plane, a sphere drawn with the real sphere's orientation,
             // and the text box. Inactive until IntroSequence runs it.
@@ -268,6 +307,7 @@ namespace Study.EditorTools
             var drawnSphere = AddChild<IntroSphereView>(drawnSphereRoot, "Drawing");
             var introPanel = LessonScenePieces.AddIntroPanel(palette, SphereCenter, DefaultEye);
             introPanel.transform.SetParent(stage.transform, true);
+            Set(captions, "panel", introPanel); // the lesson's boxes are the intro's box
             var intro = lessonObject.AddComponent<IntroSequence>();
             Set(intro, "root", introRoot);
             Set(intro, "board", board);
@@ -305,7 +345,7 @@ namespace Study.EditorTools
                 xrOrigin, interactors, orientation, overlay, end);
             styler.Apply(); // style the XR camera's background too
 
-            EditorSceneManager.SaveScene(scene, ScenePath);
+            EditorSceneManager.SaveScene(scene, demoApp ? DemoScenePath : ScenePath);
         }
 
         // The experimenter's launch screen: same environment and viewpoint switch as the lesson,

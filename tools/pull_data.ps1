@@ -38,3 +38,7 @@ adb pull "$remote/session_index.csv" (Join-Path $dest "session_index.csv") 2>$nu
 if ($ok -ne $files.Count) { Write-Host "only $ok of $($files.Count) files verified: NOTHING deleted from the headset. Run again."; exit 1 }
 foreach ($f in $files) { adb shell "rm '$remote/$f'" | Out-Null }
 Write-Host "verified $ok files; removed them from the headset"
+# Append each participant's laptop quiz (tools/quiz.py) to their session file.
+$py = Get-Command python3, python, py -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($py) { & $py.Source (Join-Path $PSScriptRoot "merge_quiz.py") $dest --quiz (Join-Path $DestRoot "quiz") }
+else { Write-Host "python not found: run tools/merge_quiz.py $dest later to add the quiz answers" }

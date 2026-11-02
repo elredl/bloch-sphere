@@ -28,13 +28,13 @@ pull the data afterwards. Each "Check" is what must be true for the row to pass.
 |---|---|---|---|---|---|---|
 | D1 | Quest | 3 | Start the app | Only "Qubit Lesson" in the library; launch footer: `display 90 Hz`, battery, `Qubit Lesson 1.0.0`; code list shows only unused C2/C3 codes, no conditions | | |
 | D2 | Quest | 3 | Calibration (hold A), ready, orientation | Calibration waits for a still head (`calibration still=1`); A pressed later in the lesson does nothing; sphere and practice cube 0.25 m below eye, 0.8 m ahead, facing you; `plausible=1`; rays select rings; grip turns the cube | | |
-| D3 | Quest | 3 | Full lesson, real time, your own answers | Pacing (pull the CSV: pause onsets at 150/390/630/840 s); `[Frames]` 90 Hz with few missed frames; narration in sync | | |
+| D3 | Quest | 3 | Full lesson, real time, your own answers | Self-paced flow (pull the CSV: every `box_shown` has a `box_next`; each turn has `turn_start`, `turn_grab`, `turn_done`, then `step_next`); guided turns are easy to grab and finish; `[Frames]` 90 Hz with few missed frames | | |
 | D4 | Quest | 2 | Full lesson, real time | No rays during the lesson; controllers visible; no prompts or dimming; pacing as D3 | | |
 | D5 | Quest | 3 | Take the headset off for ~20 s during a pause, put it back, pull trigger | `hmd_removed` then `hmd_resume`; lesson time frozen across it; narration resumes where it stopped; what reason was logged. **Where is the sphere after remount?** Compare `head_dx/dy/dz/head_yaw` in `hmd_removed` and `hmd_returned`, and look for `tracking_origin_changed`. If it moved, try hold-A recalibrate on the resume screen | | |
 | D6 | Quest | 2 | Same as D5 during narration | As D5; record what the Quest did to audio while off | | |
 | D7 | Quest | 3 | Press the Meta button mid-lesson, close the menu | Pauses (`hmd_removed reason=focus_lost`) and resumes with the trigger | | |
 | D8 | Quest | 3 | Abort with both grips + both thumbsticks 3 s; pick a reason | Ring fills; end screen; `withdrawal` logged | | |
 | D9 | Quest | any | `tools/pull_data.sh` after D1-D8 | All files verified, removed from the headset; `session_index.csv` kept | | |
-| D10 | Desktop | 1 | Full lesson, fullscreen, real time | `[Display]` 1920x1080 @ 60 Hz with no warning; `[Frames]` 60 fps; cursor hidden in the lesson only; pacing | | |
+| D10 | Desktop | 1 | Full lesson, fullscreen, real time | `[Display]` 1920x1080 @ 60 Hz with no warning; `[Frames]` 60 fps; cursor visible and Next clickable in the lesson; pacing | | |
 | D11 | Desktop | 1 | B break, then Esc hold abort | `break_start`/`break_end`; `abort input=esc`; withdrawal reason | | |
 | D12 | Labmate | 3 | Naive labmate, full session | Note any timeout (spec: if more than 1 in 5 Cond 3 attempts time out, lengthen all pauses equally); median completion time per pause for the Cond 1/2 arc start | | |

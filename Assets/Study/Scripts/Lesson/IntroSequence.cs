@@ -9,30 +9,25 @@ namespace Study.Lesson
     // are watched (they play to the end); every text box waits for NEXT, so the intro is
     // learner-paced. Texts come from intro_text.json (by id); the order is fixed here:
     //
-    //   foundation  centered box: first, the foundation the lesson is built on
-    //   space       ℂ² drawn in; box beside it: where a qubit's state lives
-    //   state       |ψ⟩ = (α, β) drawn in; box: how a qubit's state is written
-    //   complex     α = a + b i, β = c + d i drawn in; box: complex numbers
-    //   imaginary   i² = −1 drawn in; box: what i is
-    //   why         box beside the whole formula: why quantum computing needs ℂ²
-    //   visualize   the formula fades; centered box: "let's try to visualize this"
-    //   plane       ℝ²: grid, axes and the vector to (a, b) drawn in
-    //   r2          box beside it: two real numbers are easy to picture
-    //   same        plane fades; centered box asks if ℂ² can be drawn the same way,
-    //               and the answer (no: i adds a dimension) appears below it
-    //   sphere      the Bloch sphere drawn in, then swapped for the real one
-    //   bloch       box beside it: the Bloch sphere is the standard picture of ℂ²
-    //   vector      the state vector draws out to a point on the sphere, labeled |ψ⟩
-    //               and 1; box: it shows where the qubit is and must be normalized
-    //   unitary     box: unitaries move a normalized vector to another normalized one
-    //   math        U|ψ⟩ = |ψ′⟩ and its matrix form written left of the sphere; then
-    //               the vector turns to |ψ′⟩ (the old one stays as a dim ghost, |ψ⟩);
-    //               box on what they say. Then the labels fade and the lesson starts
+    //   foundation  centered box: how a state is written, and why it is an arrow on a ball
+    //   state       |ψ⟩ = (α, β) drawn in, |0⟩ and |1⟩ beside its rows; box beside it
+    //   complex     α = a + b i, β = c + d i and i² = −1 drawn in; box: complex numbers
+    //   why         box beside the whole formula: phase, which lets states interfere
+    //   four        the formula fades; ℝ² with the vector to (a, b) drawn in; box: two
+    //               numbers fit a page, four do not
+    //   notfree     the plane fades; |α|² + |β|² = 1 drawn in; box: two of the four are fixed
+    //   bloch       the Bloch sphere drawn in, then swapped for the real one; box: two
+    //               angles, a point on a globe
+    //   globe       the state vector draws out to a point on the sphere, labeled |ψ⟩ and
+    //               1; box: height is latitude (the odds), direction is longitude (phase)
+    //   turns       U|ψ⟩ = |ψ′⟩ and its matrix form written left of the sphere; then the
+    //               vector turns to |ψ′⟩ (the old one stays as a dim ghost, |ψ⟩); box:
+    //               every unitary is a turn. Then the labels fade and the lesson starts
     //
     // Logged as intro_start, intro_box (shown), intro_next (seconds on the box), intro_end.
     public class IntroSequence : MonoBehaviour
     {
-        const float AnswerDelay = 3f; // the "same" box's answer appears this long after its question
+        const float AnswerDelay = 3f; // a box's answer, if it has one, appears this long after its question
         const float FadeSeconds = 1.2f;
         const float TurnSeconds = 3.5f; // the example unitary's turn
 
@@ -109,22 +104,20 @@ namespace Study.Lesson
             drawnSphere.gameObject.SetActive(false);
 
             yield return ShowBox("foundation", side: false);
-            yield return board.DrawSpace();
-            yield return ShowBox("space", side: true);
             yield return board.DrawState();
             yield return ShowBox("state", side: true);
             yield return board.DrawComplex();
-            yield return ShowBox("complex", side: true);
             yield return board.DrawImaginary();
-            yield return ShowBox("imaginary", side: true);
+            yield return ShowBox("complex", side: true);
             yield return ShowBox("why", side: true);
-            StartCoroutine(board.FadeFormula(FadeSeconds));
-            yield return ShowBox("visualize", side: false);
 
+            yield return board.FadeFormula(FadeSeconds);
             yield return board.DrawPlane();
-            yield return ShowBox("r2", side: true);
+            yield return ShowBox("four", side: true);
             yield return board.FadePlane(FadeSeconds);
-            yield return ShowBox("same", side: false);
+            yield return board.DrawNorm();
+            yield return ShowBox("notfree", side: true);
+            yield return board.FadeNorm(FadeSeconds);
 
             drawnSphere.gameObject.SetActive(true);
             yield return drawnSphere.Draw();
@@ -138,8 +131,7 @@ namespace Study.Lesson
             realVector.SetVisible(true);
             yield return GrowVector(2.0f);
             yield return drawnSphere.WriteVectorLabels();
-            yield return ShowBox("vector", side: true);
-            yield return ShowBox("unitary", side: true);
+            yield return ShowBox("globe", side: true);
             yield return board.DrawUnitary();
             ghost.ShowDirection(IntroSphereView.Example);
             ghost.SetVisible(true);
@@ -147,7 +139,7 @@ namespace Study.Lesson
             animator.Play(IntroSphereView.Turn, TurnSeconds);
             while (animator.IsPlaying) yield return null;
             yield return drawnSphere.WriteMovedLabel();
-            yield return ShowBox("math", side: true);
+            yield return ShowBox("turns", side: true);
             StartCoroutine(drawnSphere.FadeVectorLabels(FadeSeconds));
             yield return board.FadeUnitary(FadeSeconds);
             ghost.SetVisible(false);
@@ -179,7 +171,8 @@ namespace Study.Lesson
         {
             Box box = text.Find(id);
             nextPressed = false;
-            panel.Show(box.title, box.body, string.IsNullOrEmpty(box.answer) ? null : box.answer, side, text.nextLabel);
+            panel.Show(box.title, box.body, string.IsNullOrEmpty(box.answer) ? null : box.answer,
+                       side ? IntroPanelView.Pose.Side : IntroPanelView.Pose.Center, text.nextLabel);
             StudyEvents.Log("intro_box", $"box={id}");
             float shown = Time.realtimeSinceStartup;
             if (!string.IsNullOrEmpty(box.answer))

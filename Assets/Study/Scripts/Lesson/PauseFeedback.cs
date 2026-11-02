@@ -32,6 +32,7 @@ namespace Study.Lesson
             public string lockedLine;   // {0} = the learner's answer
             public string gateHint;
             public string rotateHint;
+            public string turnGuide;    // Cond 3, a lesson turn: what to do with the guide
             public string correctTitle;
             public string incorrectTitle;
             public string neutralTitle;
@@ -124,7 +125,7 @@ namespace Study.Lesson
             if (ui == null || tasks == null) { errors.Add("missing ui or tasks"); return errors; }
             foreach (string field in new[] { ui.placeTitle, ui.placeHint, ui.placeHintDesktop, ui.placeHintList, ui.placeHintListHeight, ui.lockLabel, ui.chooseHint,
                          ui.predictTitle, ui.turnTitle, ui.positionHint, ui.positionHintDesktop, ui.lockedLine, ui.gateHint,
-                         ui.rotateHint, ui.correctTitle, ui.incorrectTitle, ui.neutralTitle })
+                         ui.rotateHint, ui.turnGuide, ui.correctTitle, ui.incorrectTitle, ui.neutralTitle })
                 if (string.IsNullOrWhiteSpace(field)) errors.Add("a ui text is empty");
             foreach (LessonTimeline.PauseTask task in timeline.pauseTasks)
             {

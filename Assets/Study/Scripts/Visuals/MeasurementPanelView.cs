@@ -7,6 +7,9 @@ namespace Study.Visuals
     // Running histogram of measurement outcomes. Each bar is paired with its
     // label (|0>, |1>) and a count, so color is never the only cue. Bars
     // grow from a fixed baseline with height = fraction of shots so far.
+    //
+    // Live mode (the demo's sandbox): the bars show the chance of 0 and 1 for the
+    // current state instead.
     [ExecuteAlways]
     public class MeasurementPanelView : MonoBehaviour
     {
@@ -26,6 +29,7 @@ namespace Study.Visuals
         int zeros;
         int ones;
         int total;
+        string demoTitle; // the scene's title, restored when the 100-shot demo follows live mode
 
         void OnEnable()
         {
@@ -45,6 +49,7 @@ namespace Study.Visuals
 
         public void Show(int totalShots)
         {
+            if (demoTitle != null) title.text = demoTitle;
             total = totalShots;
             zeros = 0;
             ones = 0;
@@ -69,6 +74,24 @@ namespace Study.Visuals
             SetBar(barOne, shots == 0 ? 0 : ones / (float)shots);
             countZero.text = Count(zeros, shots);
             countOne.text = Count(ones, shots);
+        }
+
+        public void ShowLive(string titleText)
+        {
+            if (demoTitle == null) demoTitle = title.text;
+            title.text = titleText;
+            group.alpha = 1;
+        }
+
+        // probabilityZero: of the current state. tally: the counter line, short ("" for none).
+        public void SetLive(double probabilityZero, string tally)
+        {
+            float p0 = Mathf.Clamp01((float)probabilityZero);
+            SetBar(barZero, p0);
+            SetBar(barOne, 1 - p0);
+            countZero.text = $"{Mathf.RoundToInt(100 * p0)}%";
+            countOne.text = $"{Mathf.RoundToInt(100 * (1 - p0))}%";
+            counter.text = tally;
         }
 
         static string Count(int n, int shots) => shots == 0 ? "0" : $"{n}  ({Mathf.RoundToInt(100f * n / shots)}%)";

@@ -319,7 +319,7 @@ namespace Study.Lesson
             StudyEvents.Log(lesson.Time, type, $"pause={PauseNumber} {fields}".TrimEnd());
 
         // The state whose Bloch vector points along a unit direction.
-        static Qubit QubitAt(BlochVector direction) =>
+        public static Qubit QubitAt(BlochVector direction) =>
             Qubit.FromBlochAngles(Math.Acos(Math.Max(-1, Math.Min(1, direction.Z))), Math.Atan2(direction.Y, direction.X));
 
         // How an answer reads on screen: "50%" for P(0) tasks, "|+i⟩" for positions.

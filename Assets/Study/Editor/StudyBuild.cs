@@ -14,21 +14,27 @@ namespace Study.EditorTools
     // and the condition comes from allocation.csv) and the Lesson scene.
     //   BuildQuest()    Quest 3 APK, Conditions 2 and 3   Builds/Quest/lesson.apk
     //   BuildDesktop()  Condition 1 desktop               Builds/Desktop/lesson/lesson.x86_64
+    // And the in-person demo, a separate app (own name, package and data folder; Demo scene only):
+    //   BuildQuestDemo()  Quest 3 APK, "Qubit Demo"       Builds/QuestDemo/demo.apk
     // Post-processing must be off on every camera (no bloom, Checkpoint 3); the build checks.
     public static class StudyBuild
     {
         static readonly string[] Scenes = { "Assets/Study/Scenes/Launch.unity", "Assets/Study/Scenes/Lesson.unity" };
+        static readonly string[] DemoScenes = { StyleLabSetup.DemoScenePath };
         const string OpenXRLoader = "UnityEngine.XR.OpenXR.OpenXRLoader";
 
         public static string BuildQuest(string arg = null) =>
-            Build(BuildTarget.Android, BuildTargetGroup.Android, "Builds/Quest/lesson.apk");
+            Build(BuildTarget.Android, BuildTargetGroup.Android, "Builds/Quest/lesson.apk", Scenes, ProductName, PackageId);
+
+        public static string BuildQuestDemo(string arg = null) =>
+            Build(BuildTarget.Android, BuildTargetGroup.Android, "Builds/QuestDemo/demo.apk", DemoScenes, DemoProductName, DemoPackageId);
 
         // Linux build (the only desktop player module installed). The same settings apply to a
         // Windows build once that module is added.
         public static string BuildDesktop(string arg = null)
         {
             ConfigureDesktopPlayer();
-            return Build(BuildTarget.StandaloneLinux64, BuildTargetGroup.Standalone, "Builds/Desktop/lesson/lesson.x86_64");
+            return Build(BuildTarget.StandaloneLinux64, BuildTargetGroup.Standalone, "Builds/Desktop/lesson/lesson.x86_64", Scenes, ProductName, PackageId);
         }
 
         // Condition 1 never starts XR: no OpenXR loader on desktop and no XR start-up. This also
@@ -68,19 +74,23 @@ namespace Study.EditorTools
         public const string ProductName = "Qubit Lesson";
         public const string CompanyName = "Qupacabras";
         public const string PackageId = "edu.colostate.qupacabras.qubitlesson";
+        public const string DemoProductName = "Qubit Demo";
+        public const string DemoPackageId = "edu.colostate.qupacabras.qubitdemo";
         // Bump for every build that runs participants; the session files record it (app_version).
         public const string Version = "1.0.0";
 
-        public static string ConfigureIdentity(string arg = null)
+        public static string ConfigureIdentity(string arg = null) => ConfigureIdentity(ProductName, PackageId);
+
+        static string ConfigureIdentity(string product, string package)
         {
-            PlayerSettings.productName = ProductName;
+            PlayerSettings.productName = product;
             PlayerSettings.companyName = CompanyName;
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, PackageId);
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone, PackageId);
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, package);
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone, package);
             PlayerSettings.bundleVersion = Version;
             PlayerSettings.Android.bundleVersionCode = 1;
             AssetDatabase.SaveAssets();
-            return $"{ProductName} / {CompanyName} / {PackageId} / {Version}";
+            return $"{product} / {CompanyName} / {package} / {Version}";
         }
 
         // The commit the build came from, for BUILD_STAMP.txt. "-dirty": the study's own code,
@@ -127,34 +137,35 @@ namespace Study.EditorTools
                 $"built     {System.DateTime.Now:yyyy-MM-dd HH:mm}\n" +
                 $"unity     {Application.unityVersion}\n" +
                 $"target    {report.summary.platform}\n" +
-                $"product   {ProductName} ({CompanyName})\n" +
+                $"product   {PlayerSettings.productName} ({CompanyName})\n" +
                 $"package   {PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(report.summary.platform)))}\n");
         }
 
-        static string Build(BuildTarget target, BuildTargetGroup group, string path)
+        static string Build(BuildTarget target, BuildTargetGroup group, string path, string[] scenes, string product, string package)
         {
             if (EditorUserBuildSettings.activeBuildTarget != target)
                 EditorUserBuildSettings.SwitchActiveBuildTarget(group, target);
 
-            foreach (string scenePath in Scenes)
+            foreach (string scenePath in scenes)
             {
                 EditorSceneManager.OpenScene(scenePath);
                 foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include))
                     if (cam.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing)
                         return $"Failed: post-processing is on for {cam.name} in {scenePath}";
             }
-            EditorSceneManager.OpenScene(Scenes[1]);
+            EditorSceneManager.OpenScene(scenes[scenes.Length - 1]);
 
             var options = new BuildPlayerOptions
             {
-                scenes = Scenes,
+                scenes = scenes,
                 locationPathName = path,
                 target = target,
                 options = BuildOptions.None,
             };
-            ConfigureIdentity();
+            ConfigureIdentity(product, package);
             BuildReport report = BuildPipeline.BuildPlayer(options);
             WriteStamp(report, path);
+            if (package != PackageId) ConfigureIdentity(); // the project's settings stay the study's
 
             var s = report.summary;
             string errors = string.Join(" | ", report.steps.SelectMany(step => step.messages)

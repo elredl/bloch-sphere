@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QISCIT Quiz</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #5d6673; --line: #d5dae1;
+    --accent: #1f6feb; --accent-soft: #e7f0fe; --warn-bg: #fff6e0; --warn: #8a5a00; --err: #b42318;
+    --wire: #1b1f24;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 19px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px 120px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 32px; }
+  h1 { font-size: 28px; margin: 0 0 16px; }
+  h2 { font-size: 22px; margin: 0 0 12px; }
+  p { margin: 0 0 14px; }
+  .muted { color: var(--muted); font-size: 16px; }
+  .hidden { display: none !important; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); padding: 10px 22px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .4; cursor: default; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .spread { justify-content: space-between; }
+  input[type=text] { font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; width: 9em;
+    text-transform: uppercase; }
+  label.radio { display: inline-flex; gap: 8px; align-items: center; margin-right: 20px; }
+  .note { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 10px 14px; margin: 12px 0; font-size: 16px; }
+  .error { color: var(--err); font-size: 16px; margin: 10px 0; min-height: 1.4em; }
+  .progress { color: var(--muted); font-size: 16px; margin-bottom: 10px; }
+  .stem { font-size: 21px; margin-bottom: 18px; }
+  .figure { margin: 8px 0 22px; overflow-x: auto; }
+  .figure svg { display: block; max-width: 100%; height: auto; }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option { display: flex; gap: 14px; align-items: flex-start; text-align: left; width: 100%;
+    padding: 14px 16px; border: 2px solid var(--line); border-radius: 10px; background: var(--card); }
+  .option .letter { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line);
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; }
+  .option.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .option.selected .letter { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line); }
+  .nav .inner { max-width: 860px; margin: 0 auto; padding: 14px 24px; }
+  .glossary dt { font-weight: 650; margin-top: 18px; display: flex; align-items: center; gap: 10px; }
+  .glossary dd { margin: 4px 0 0; }
+  .glossary .figure { margin: 10px 0 4px; }
+  .overlay { position: fixed; inset: 0; background: rgba(20, 24, 30, .45); display: flex; justify-content: center;
+    padding: 24px; z-index: 10; }
+  .overlay .card { max-width: 860px; width: 100%; overflow-y: auto; max-height: calc(100vh - 48px); }
+  .sticky-head { position: sticky; top: -32px; background: var(--card); padding: 8px 0 12px; margin-top: -8px; z-index: 1; }
+  .footer-link { position: fixed; right: 12px; bottom: 10px; font-size: 13px; color: var(--muted); background: none;
+    border: none; padding: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <!-- Experimenter: participant code and phase -->
+  <section id="setup" class="card">
+    <h1>QISCIT quiz: experimenter</h1>
+    <p class="muted">Enter the participant's code and pick the phase, then hand the laptop over.</p>
+    <div class="row" style="margin: 18px 0;">
+      <label for="code">Participant code</label>
+      <input id="code" type="text" maxlength="3" placeholder="P07" autocomplete="off">
+    </div>
+    <div style="margin-bottom: 18px;">
+      <label class="radio"><input type="radio" name="phase" value="pre"> Pretest (before the lesson)</label>
+      <label class="radio"><input type="radio" name="phase" value="post"> Posttest (after the lesson)</label>
+    </div>
+    <div id="setup-notes"></div>
+    <div id="setup-error" class="error"></div>
+    <div class="row">
+      <button id="check" class="primary">Check</button>
+      <button id="start" class="primary hidden">Start the quiz</button>
+    </div>
+  </section>
+
+  <section id="instructions" class="card hidden">
+    <h1>Instructions</h1>
+    <p id="instructions-text"></p>
+    <div class="row" style="margin-top: 24px;"><button class="primary" id="to-glossary">Continue</button></div>
+  </section>
+
+  <section id="glossary-page" class="card hidden">
+    <h1>Glossary of Quantum Information Science Concepts</h1>
+    <div class="glossary-body"></div>
+    <div class="row" style="margin-top: 28px;"><button class="primary" id="begin">Begin the questions</button></div>
+  </section>
+
+  <section id="item" class="hidden">
+    <div class="card">
+      <div class="progress" id="progress"></div>
+      <div class="stem" id="stem"></div>
+      <div class="figure" id="item-figure"></div>
+      <div class="options" id="options"></div>
+    </div>
+  </section>
+
+  <section id="done" class="card hidden">
+    <h1>Thank you</h1>
+    <p>You have finished. Please let the experimenter know.</p>
+  </section>
+</main>
+
+<div class="nav hidden" id="nav">
+  <div class="inner row spread">
+    <button id="back">Back</button>
+    <button id="open-glossary">Glossary</button>
+    <button id="next" class="primary" disabled>Next</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="glossary-overlay">
+  <div class="card">
+    <div class="sticky-head row spread">
+      <h2 style="margin: 0;">Glossary</h2>
+      <button class="primary" id="close-glossary">Back to the question</button>
+    </div>
+    <div class="glossary-body"></div>
+  </div>
+</div>
+
+<button class="footer-link hidden" id="experimenter-link">Experimenter</button>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+let data = null, quiz = null;
+// quiz: { code, phase, file, index, choices: {number: letter}, shownAt }
+
+async function post(path, body) {
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const json = await res.json().catch(() => ({ error: "No reply from the quiz program." }));
+  if (!res.ok) throw new Error(json.error || "Error");
+  return json;
+}
+
+// A save that failed must not pass unnoticed: stop and call the experimenter.
+async function save(path, body) {
+  try { return await post(path, body); }
+  catch (e) {
+    alert("The answer could not be saved (" + e.message + "). Please call the experimenter.");
+    throw e;
+  }
+}
+
+function show(id) {
+  for (const s of ["setup", "instructions", "glossary-page", "item", "done"]) $(s).classList.toggle("hidden", s !== id);
+  $("nav").classList.toggle("hidden", id !== "item");
+  $("experimenter-link").classList.toggle("hidden", id !== "done");
+  window.scrollTo(0, 0);
+}
+
+// ---------- drawings (SVG) ----------
+const NS = "http://www.w3.org/2000/svg";
+function el(name, attrs, parent, text) {
+  const e = document.createElementNS(NS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svg(w, h) { return el("svg", { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: "img" }); }
+const STROKE = { stroke: "currentColor", "stroke-width": 2, fill: "none" };
+
+function gateBox(g, x, y, label, dashed) {
+  el("rect", { x: x - 22, y: y - 22, width: 44, height: 44, rx: 4, fill: "#fff", stroke: "currentColor",
+               "stroke-width": 2, "stroke-dasharray": dashed ? "5 4" : "none" }, g);
+  el("text", { x, y: y + 8, "text-anchor": "middle", "font-size": 22, "font-weight": 600, fill: "currentColor" }, g, label);
+}
+function meter(g, x, y) {
+  el("rect", { x: x - 22, y: y - 22, width: 44, height: 44, rx: 4, fill: "#fff", stroke: "currentColor", "stroke-width": 2 }, g);
+  el("path", { d: `M ${x - 14} ${y + 8} A 14 14 0 0 1 ${x + 14} ${y + 8}`, ...STROKE }, g);
+  el("line", { x1: x, y1: y + 8, x2: x + 10, y2: y - 12, ...STROKE }, g);
+}
+function ket(label) { return label === null || label === undefined ? null : `|${label}⟩`; }
+
+// One or more single-qubit circuits: {start, ops: ["H", "?", "M"], result}.
+function circuits(wires) {
+  const step = 72, left = 70, rowH = 84;
+  const longest = Math.max(...wires.map((w) => w.ops.length));
+  const width = left + longest * step + 100, height = wires.length * rowH + 10;
+  const s = svg(width, height);
+  s.style.color = "var(--wire)";
+  wires.forEach((w, r) => {
+    const y = 46 + r * rowH, g = el("g", {}, s);
+    if (wires.length > 1) el("text", { x: 0, y: y - 30, "font-size": 15, fill: "#5d6673" }, g, `Circuit ${r + 1}`);
+    const start = ket(w.start);
+    if (start) el("text", { x: left - 52, y: y + 7, "font-size": 21, fill: "currentColor" }, g, start);
+    const endX = left + w.ops.length * step - step / 2 + (w.ops[w.ops.length - 1] === "M" ? 0 : 30);
+    el("line", { x1: left - 14, y1: y, x2: endX, y2: y, ...STROKE }, g);
+    w.ops.forEach((op, i) => {
+      const x = left + i * step + step / 2 - 10;
+      if (op === "M") {
+        meter(g, x, y);
+        if (w.result !== undefined && w.result !== null) {
+          el("line", { x1: x + 22, y1: y - 3, x2: x + 50, y2: y - 3, ...STROKE }, g);
+          el("line", { x1: x + 22, y1: y + 3, x2: x + 50, y2: y + 3, ...STROKE }, g);
+          el("text", { x: x + 58, y: y + 7, "font-size": 21, fill: "currentColor" }, g, w.result);
+        }
+      } else gateBox(g, x, y, op, op === "?");
+    });
+  });
+  return s;
+}
+
+function bloch() {
+  const s = svg(300, 270), cx = 150, cy = 140, r = 95;
+  s.style.color = "var(--wire)";
+  el("circle", { cx, cy, r, ...STROKE }, s);
+  el("ellipse", { cx, cy, rx: r, ry: 28, ...STROKE, "stroke-dasharray": "5 5" }, s);
+  el("line", { x1: cx, y1: cy - r - 12, x2: cx, y2: cy + r + 12, ...STROKE, "stroke-width": 1.2 }, s);
+  el("line", { x1: cx - r - 12, y1: cy, x2: cx + r + 12, y2: cy, ...STROKE, "stroke-width": 1.2 }, s);
+  el("line", { x1: cx + 40, y1: cy - 26, x2: cx - 62, y2: cy + 40, ...STROKE, "stroke-width": 1.2 }, s);
+  el("text", { x: cx + 8, y: cy - r - 16, "font-size": 18, fill: "currentColor" }, s, "z  |0⟩");
+  el("text", { x: cx + 8, y: cy + r + 26, "font-size": 18, fill: "currentColor" }, s, "|1⟩");
+  el("text", { x: cx - 82, y: cy + 56, "font-size": 18, fill: "currentColor" }, s, "x");
+  el("text", { x: cx + r + 14, y: cy + 6, "font-size": 18, fill: "currentColor" }, s, "y");
+  const tx = cx + 52, ty = cy - 62;
+  el("line", { x1: cx, y1: cy, x2: tx, y2: ty, stroke: "#1f6feb", "stroke-width": 3.5 }, s);
+  el("circle", { cx: tx, cy: ty, r: 6, fill: "#1f6feb" }, s);
+  el("line", { x1: tx, y1: ty, x2: tx, y2: cy + 18, stroke: "#1f6feb", "stroke-width": 1, "stroke-dasharray": "3 4" }, s);
+  return s;
+}
+
+// Multi-qubit circuit. cols: arrays of {w, type: "gate"|"meter"|"ctrl"|"target", label}; links: [col, fromWire, toWire, classical]
+function multi(starts, cols, links, endLabels) {
+  const step = 68, left = 66, rowH = 64, top = 40;
+  const width = left + cols.length * step + 70, height = top + starts.length * rowH;
+  const s = svg(width, height);
+  s.style.color = "var(--wire)";
+  const X = (c) => left + c * step + step / 2, Y = (w) => top + w * rowH;
+  starts.forEach((label, w) => {
+    el("text", { x: 4, y: Y(w) + 7, "font-size": 20, fill: "currentColor" }, s, label);
+    el("line", { x1: left - 16, y1: Y(w), x2: width - 40, y2: Y(w), ...STROKE }, s);
+    if (endLabels && endLabels[w]) el("text", { x: width - 34, y: Y(w) + 7, "font-size": 20, fill: "currentColor" }, s, endLabels[w]);
+  });
+  for (const [c, a, b, classical] of links) {
+    if (classical) {
+      el("line", { x1: X(c) - 3, y1: Y(a), x2: X(c) - 3, y2: Y(b), ...STROKE }, s);
+      el("line", { x1: X(c) + 3, y1: Y(a), x2: X(c) + 3, y2: Y(b), ...STROKE }, s);
+    } else el("line", { x1: X(c), y1: Y(a), x2: X(c), y2: Y(b), ...STROKE }, s);
+  }
+  cols.forEach((col, c) => col.forEach((op) => {
+    const x = X(c), y = Y(op.w);
+    if (op.type === "gate") gateBox(s, x, y, op.label);
+    else if (op.type === "meter") meter(s, x, y);
+    else if (op.type === "ctrl") el("circle", { cx: x, cy: y, r: 6, fill: "currentColor" }, s);
+    else if (op.type === "target") {
+      el("circle", { cx: x, cy: y, r: 14, ...STROKE, fill: "#fff" }, s);
+      el("line", { x1: x - 14, y1: y, x2: x + 14, y2: y, ...STROKE }, s);
+      el("line", { x1: x, y1: y - 14, x2: x, y2: y + 14, ...STROKE }, s);
+    }
+  }));
+  return s;
+}
+
+function exampleCircuit() {
+  const wrap = document.createElement("div");
+  wrap.appendChild(circuits([{ start: "0", ops: ["H", "X", "M"] }]));
+  const cap = document.createElement("div");
+  cap.className = "muted";
+  cap.textContent = "Left to right: a qubit starting in state 0, two gates (H, then X), and a measurement.";
+  wrap.appendChild(cap);
+  return wrap;
+}
+const cnot = () => multi(["control", "target"].map(() => ""), [[{ w: 0, type: "ctrl" }, { w: 1, type: "target" }]], [[0, 0, 1]],
+  null);
+function cnotLabeled() {
+  const wrap = document.createElement("div");
+  wrap.appendChild(cnot());
+  const cap = document.createElement("div");
+  cap.className = "muted";
+  cap.textContent = "Top: control qubit (dot). Bottom: target qubit (⊕).";
+  wrap.appendChild(cap);
+  return wrap;
+}
+const teleportation = () => multi(["|ψ⟩", "|0⟩", "|0⟩"], [
+  [{ w: 1, type: "gate", label: "H" }],
+  [{ w: 1, type: "ctrl" }, { w: 2, type: "target" }],
+  [{ w: 0, type: "ctrl" }, { w: 1, type: "target" }],
+  [{ w: 0, type: "gate", label: "H" }],
+  [{ w: 0, type: "meter" }, { w: 1, type: "meter" }],
+  [{ w: 1, type: "ctrl" }, { w: 2, type: "gate", label: "X" }],
+  [{ w: 0, type: "ctrl" }, { w: 2, type: "gate", label: "Z" }],
+], [[1, 1, 2], [2, 0, 1], [5, 1, 2, true], [6, 0, 2, true]], [null, null, "|ψ⟩"]);
+
+function symbol(label) {
+  const s = svg(60, 50);
+  s.style.color = "var(--wire)";
+  el("line", { x1: 0, y1: 25, x2: 60, y2: 25, ...STROKE }, s);
+  if (label === "M") meter(s, 30, 25); else gateBox(s, 30, 25, label);
+  return s;
+}
+
+function figure(spec) {
+  if (!spec) return null;
+  if (Array.isArray(spec)) return circuits(spec);
+  if (spec.startsWith("symbol:")) return symbol(spec.slice(7));
+  return { bloch, example_circuit: exampleCircuit, cnot: cnotLabeled, teleportation }[spec]();
+}
+
+// ---------- glossary ----------
+function fillGlossary(container) {
+  container.innerHTML = "";
+  const intro = document.createElement("p");
+  intro.textContent = data.glossaryIntro;
+  container.appendChild(intro);
+  const dl = document.createElement("dl");
+  dl.className = "glossary";
+  for (const entry of data.glossary) {
+    const dt = document.createElement("dt"), dd = document.createElement("dd");
+    const isSymbol = entry.figure && entry.figure.startsWith("symbol:");
+    dt.appendChild(document.createTextNode(entry.term));
+    if (isSymbol) dt.appendChild(figure(entry.figure));
+    dd.textContent = entry.definition;
+    if (entry.figure && !isSymbol) {
+      const f = document.createElement("div");
+      f.className = "figure";
+      f.appendChild(figure(entry.figure));
+      dd.appendChild(f);
+    }
+    dl.append(dt, dd);
+  }
+  container.appendChild(dl);
+}
+
+// ---------- items ----------
+function renderItem() {
+  const item = data.items[quiz.index];
+  $("progress").textContent = `Question ${quiz.index + 1} of ${data.items.length}`;
+  $("stem").textContent = item.stem;
+  const fig = $("item-figure");
+  fig.innerHTML = "";
+  const drawing = figure(item.figure);
+  if (drawing) fig.appendChild(drawing);
+  fig.classList.toggle("hidden", !drawing);
+  const box = $("options");
+  box.innerHTML = "";
+  for (const o of item.options) {
+    const b = document.createElement("button");
+    b.className = "option" + (quiz.choices[item.number] === o.letter ? " selected" : "");
+    b.innerHTML = `<span class="letter">${o.letter}</span><span></span>`;
+    b.lastChild.textContent = o.text;
+    b.onclick = () => choose(item, o.letter);
+    box.appendChild(b);
+  }
+  $("back").disabled = quiz.index === 0;
+  $("next").textContent = quiz.index === data.items.length - 1 ? "Finish" : "Next";
+  $("next").disabled = !quiz.choices[item.number];
+  quiz.shownAt = performance.now();
+  save("/event", { kind: "item", item: item.number });
+  window.scrollTo(0, 0);
+}
+
+function choose(item, letter) {
+  quiz.choices[item.number] = letter;
+  save("/event", { kind: "choice", item: item.number, choice: letter });
+  [...$("options").children].forEach((b, i) => b.classList.toggle("selected", item.options[i].letter === letter));
+  $("next").disabled = false;
+}
+
+async function leave(delta) {
+  const item = data.items[quiz.index];
+  $("next").disabled = $("back").disabled = true;
+  await save("/event", { kind: "answer", item: item.number, choice: quiz.choices[item.number] || "",
+                         seconds: (performance.now() - quiz.shownAt) / 1000 });
+  if (delta > 0 && quiz.index === data.items.length - 1) {
+    const result = await save("/finish", {});
+    quiz.file = result.file;
+    quiz.finished = true;
+    show("done");
+    return;
+  }
+  quiz.index += delta;
+  renderItem();
+}
+
+// ---------- experimenter setup ----------
+function setupValues() {
+  const phase = document.querySelector("input[name=phase]:checked");
+  return { code: $("code").value.trim().toUpperCase(), phase: phase ? phase.value : "" };
+}
+function resetSetup() {
+  $("start").classList.add("hidden");
+  $("check").classList.remove("hidden");
+  $("setup-notes").innerHTML = "";
+  $("setup-error").textContent = "";
+}
+$("code").addEventListener("input", resetSetup);
+document.querySelectorAll("input[name=phase]").forEach((r) => r.addEventListener("change", resetSetup));
+
+$("check").onclick = async () => {
+  resetSetup();
+  try {
+    const r = await post("/check", setupValues());
+    for (const w of r.warnings) {
+      const n = document.createElement("div");
+      n.className = "note";
+      n.textContent = w;
+      $("setup-notes").appendChild(n);
+    }
+    const ok = document.createElement("p");
+    ok.textContent = `Ready: ${r.code}, ${r.phase === "pre" ? "pretest" : "posttest"}.`;
+    $("setup-notes").appendChild(ok);
+    $("check").classList.add("hidden");
+    $("start").classList.remove("hidden");
+  } catch (e) { $("setup-error").textContent = e.message; }
+};
+
+$("start").onclick = async () => {
+  try {
+    const v = setupValues();
+    const r = await post("/start", v);
+    quiz = { ...v, file: r.file, index: 0, choices: {}, finished: false };
+    $("instructions-text").textContent = data.instructions;
+    show("instructions");
+  } catch (e) { $("setup-error").textContent = e.message; }
+};
+
+$("to-glossary").onclick = () => show("glossary-page");
+$("begin").onclick = () => { show("item"); renderItem(); };
+$("next").onclick = () => leave(1);
+$("back").onclick = () => leave(-1);
+
+$("open-glossary").onclick = () => {
+  $("glossary-overlay").classList.remove("hidden");
+  $("glossary-overlay").querySelector(".card").scrollTop = 0;
+  save("/event", { kind: "glossary", open: true, item: data.items[quiz.index].number });
+};
+$("close-glossary").onclick = () => {
+  $("glossary-overlay").classList.add("hidden");
+  save("/event", { kind: "glossary", open: false, item: data.items[quiz.index].number });
+};
+
+$("experimenter-link").onclick = () => {
+  if (!confirm("Experimenter only: back to the start screen?")) return;
+  alert(`Saved: ${quiz.file}`);
+  quiz = null;
+  $("code").value = "";
+  document.querySelectorAll("input[name=phase]").forEach((r) => (r.checked = false));
+  resetSetup();
+  show("setup");
+};
+
+window.addEventListener("beforeunload", (e) => {
+  if (quiz && !quiz.finished) { e.preventDefault(); e.returnValue = ""; }
+});
+
+fetch("/items").then((r) => r.json()).then((d) => {
+  data = d;
+  document.querySelectorAll(".glossary-body").forEach(fillGlossary);
+}).catch(() => { $("setup-error").textContent = "Could not load the items: is tools/quiz.py running?"; });
+</script>
+</body>
+</html>

@@ -1,0 +1,618 @@
+{
+  "instrument": "QISCIT v1.0, 17 of 31 items",
+  "instructions": "On the following pages, you will be presented with a glossary of Quantum Information Science (QIS) concepts and a total of 17 questions. Please answer each question to the best of your ability using your knowledge of quantum information science and the glossary.",
+  "glossaryIntro": "As an emerging field, quantum information science has a rapidly developing vocabulary. In this test, we use specific definitions that capture key concepts. More-general definitions may be encountered in advanced classes. The following glossary presents the specific definitions used through this test but does not contain all the information required to answer the questions.",
+  "glossary": [
+    {
+      "term": "Quantum Bit (a.k.a. Qubit)",
+      "definition": "The basic unit of quantum information. It is the quantum analogue of a classical bit, with two orthogonal basis states 0 and 1.",
+      "figure": null
+    },
+    {
+      "term": "Superposition",
+      "definition": "The ability of a quantum system to be in multiple basis states at the same time.",
+      "figure": null
+    },
+    {
+      "term": "Bloch Vector",
+      "definition": "A method of visualizing the state of a single qubit by converting information about its quantum state to a point on or within a sphere. For more than one qubit, the Bloch vector representation does not always provide complete information. A picture of a Bloch vector is shown here.",
+      "figure": "bloch"
+    },
+    {
+      "term": "Quantum Circuit",
+      "definition": "A sequence of quantum operations applied to a system of qubits. A picture of a quantum circuit is shown here. The individual concepts (measurements, gates, etc.) are defined below.",
+      "figure": "example_circuit"
+    },
+    {
+      "term": "Measurement",
+      "definition": "The act of examining the state of the system, which causes the system to collapse probabilistically to one of the basis states (0 or 1) of the measured qubit. For this test, all measurements are assumed to be projective measurements of a single qubit in the computational basis.",
+      "figure": "symbol:M"
+    },
+    {
+      "term": "Quantum Gate",
+      "definition": "A quantum operation that can change the state of one or more qubits via a generalized rotation. For this test, the term gate will be used exclusively for ideal unitary quantum gates.",
+      "figure": null
+    },
+    {
+      "term": "X Gate",
+      "definition": "A quantum gate that rotates the Bloch vector of a single qubit by 180 degrees about the X axis.",
+      "figure": "symbol:X"
+    },
+    {
+      "term": "Y Gate",
+      "definition": "A quantum gate that rotates the Bloch vector of a single qubit by 180 degrees about the Y axis.",
+      "figure": "symbol:Y"
+    },
+    {
+      "term": "Z Gate",
+      "definition": "A quantum gate that rotates the Bloch vector of a single qubit by 180 degrees about the Z axis.",
+      "figure": "symbol:Z"
+    },
+    {
+      "term": "S Gate",
+      "definition": "A quantum gate that rotates the Bloch vector of a single qubit by 90 degrees about the Z axis.",
+      "figure": "symbol:S"
+    },
+    {
+      "term": "T Gate",
+      "definition": "A quantum gate that rotates the Bloch vector of a single qubit by 45 degrees about the Z axis.",
+      "figure": "symbol:T"
+    },
+    {
+      "term": "Hadamard (H) Gate",
+      "definition": "A quantum gate that rotates the Bloch vector of a single qubit by 180 degrees about the X+Z axis.",
+      "figure": "symbol:H"
+    },
+    {
+      "term": "Controlled Not (CNOT) Gate",
+      "definition": "A two-qubit quantum gate that performs an X gate on the target qubit if and only if the control qubit is in state 1.",
+      "figure": "cnot"
+    },
+    {
+      "term": "Entanglement",
+      "definition": "A fundamental quantum property in which the quantum state is shared among two or more qubits and not a property of any single qubit. When qubits are entangled, measurement of one qubit is influenced by measurements of the other qubits.",
+      "figure": null
+    },
+    {
+      "term": "Bell State",
+      "definition": "A specific two-qubit state that is maximally entangled. The four Bell states form a useful basis for describing two-qubit states.",
+      "figure": null
+    },
+    {
+      "term": "Quantum Teleportation",
+      "definition": "A procedure for transmitting quantum information from one location to another using entanglement. A picture of a canonical teleportation circuit is shown here.",
+      "figure": "teleportation"
+    },
+    {
+      "term": "Decoherence",
+      "definition": "Any process in which a quantum system's state loses information due to interactions with its surrounding environment, such as qubit dephasing and relaxation. For this test, all decoherence is assumed to be of Lindblad form (non-unitary, Markovian) such that dynamic decoupling does not protect against it. Noise from imperfect gates is considered as a form of decoherence.",
+      "figure": null
+    }
+  ],
+  "items": [
+    {
+      "number": 5,
+      "part": 3,
+      "stretch": false,
+      "stem": "How can the operations of two S gates be reversed?",
+      "figure": [
+        {
+          "ops": [
+            "S",
+            "S",
+            "?"
+          ]
+        }
+      ],
+      "options": [
+        {
+          "letter": "A",
+          "text": "Apply one T gate"
+        },
+        {
+          "letter": "B",
+          "text": "Apply two T gates"
+        },
+        {
+          "letter": "C",
+          "text": "Apply four T gates"
+        },
+        {
+          "letter": "D",
+          "text": "The S gates cannot be reversed"
+        }
+      ],
+      "answer": "C"
+    },
+    {
+      "number": 6,
+      "part": 3,
+      "stretch": false,
+      "stem": "The same unknown gate is applied in the following two quantum circuits. The first quantum circuit ends with a measurement, which always returns state 0. The second quantum circuit ends with a measurement, which always returns state 1. What common single-qubit gate could have been applied as the unknown gate?",
+      "figure": [
+        {
+          "start": "0",
+          "ops": [
+            "H",
+            "?",
+            "M"
+          ],
+          "result": "0"
+        },
+        {
+          "start": "0",
+          "ops": [
+            "H",
+            "Z",
+            "?",
+            "M"
+          ],
+          "result": "1"
+        }
+      ],
+      "options": [
+        {
+          "letter": "A",
+          "text": "An H gate"
+        },
+        {
+          "letter": "B",
+          "text": "An X gate"
+        },
+        {
+          "letter": "C",
+          "text": "A Z gate"
+        },
+        {
+          "letter": "D",
+          "text": "No such gate exists"
+        }
+      ],
+      "answer": "A"
+    },
+    {
+      "number": 8,
+      "part": 2,
+      "stretch": false,
+      "stem": "A qubit starts in state 0 and then has an H gate applied to it. If the qubit is then measured, what is the probability it will return state 0?",
+      "figure": [
+        {
+          "start": "0",
+          "ops": [
+            "H",
+            "M"
+          ]
+        }
+      ],
+      "options": [
+        {
+          "letter": "A",
+          "text": "0%"
+        },
+        {
+          "letter": "B",
+          "text": "25%"
+        },
+        {
+          "letter": "C",
+          "text": "50%"
+        },
+        {
+          "letter": "D",
+          "text": "75%"
+        },
+        {
+          "letter": "E",
+          "text": "100%"
+        }
+      ],
+      "answer": "C"
+    },
+    {
+      "number": 9,
+      "part": 4,
+      "stretch": false,
+      "stem": "For a single qubit, how many states exist that are orthogonal to the state 0?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "Zero"
+        },
+        {
+          "letter": "B",
+          "text": "One"
+        },
+        {
+          "letter": "C",
+          "text": "Two"
+        },
+        {
+          "letter": "D",
+          "text": "Infinity"
+        }
+      ],
+      "answer": "B"
+    },
+    {
+      "number": 10,
+      "part": 3,
+      "stretch": false,
+      "stem": "How can the operation of an S gate be reversed?",
+      "figure": [
+        {
+          "ops": [
+            "S",
+            "?"
+          ]
+        }
+      ],
+      "options": [
+        {
+          "letter": "A",
+          "text": "Apply another S gate"
+        },
+        {
+          "letter": "B",
+          "text": "Apply another two S gates"
+        },
+        {
+          "letter": "C",
+          "text": "Apply another three S gates"
+        },
+        {
+          "letter": "D",
+          "text": "The S gate cannot be reversed"
+        }
+      ],
+      "answer": "C"
+    },
+    {
+      "number": 15,
+      "part": 2,
+      "stretch": false,
+      "stem": "How can a qubit be put into superposition starting from state 0?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "Apply an H gate"
+        },
+        {
+          "letter": "B",
+          "text": "Apply an S gate"
+        },
+        {
+          "letter": "C",
+          "text": "Apply a T gate"
+        },
+        {
+          "letter": "D",
+          "text": "Apply an X gate"
+        }
+      ],
+      "answer": "A"
+    },
+    {
+      "number": 17,
+      "part": 3,
+      "stretch": true,
+      "stem": "A qubit starts in state 0. An H gate, an unknown gate, and an H gate are applied to the qubit. This quantum circuit ends with a measurement, which always returns state 1. What common single-qubit gate could have been applied as the unknown gate?",
+      "figure": [
+        {
+          "start": "0",
+          "ops": [
+            "H",
+            "?",
+            "H",
+            "M"
+          ],
+          "result": "1"
+        }
+      ],
+      "options": [
+        {
+          "letter": "A",
+          "text": "An S gate"
+        },
+        {
+          "letter": "B",
+          "text": "An X gate"
+        },
+        {
+          "letter": "C",
+          "text": "A Y gate"
+        },
+        {
+          "letter": "D",
+          "text": "An X or Y gate"
+        }
+      ],
+      "answer": "C"
+    },
+    {
+      "number": 19,
+      "part": 3,
+      "stretch": false,
+      "stem": "How can the operation of an X gate be reversed?",
+      "figure": [
+        {
+          "ops": [
+            "X",
+            "?"
+          ]
+        }
+      ],
+      "options": [
+        {
+          "letter": "A",
+          "text": "Apply an H gate"
+        },
+        {
+          "letter": "B",
+          "text": "Apply an X gate"
+        },
+        {
+          "letter": "C",
+          "text": "Apply a Y gate"
+        },
+        {
+          "letter": "D",
+          "text": "The X gate cannot be reversed"
+        }
+      ],
+      "answer": "B"
+    },
+    {
+      "number": 20,
+      "part": 1,
+      "stretch": false,
+      "stem": "How many potential superpositions exist for a single qubit?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "Zero"
+        },
+        {
+          "letter": "B",
+          "text": "One"
+        },
+        {
+          "letter": "C",
+          "text": "Two"
+        },
+        {
+          "letter": "D",
+          "text": "Infinity"
+        }
+      ],
+      "answer": "D"
+    },
+    {
+      "number": 21,
+      "part": 4,
+      "stretch": false,
+      "stem": "A single isolated qubit is in a superposition of states 0 and 1. What quantum state will it be in after a measurement?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "The qubit will be in both state 0 and state 1"
+        },
+        {
+          "letter": "B",
+          "text": "The qubit will be in either state 0 or state 1"
+        },
+        {
+          "letter": "C",
+          "text": "The qubit will be in neither state 0 nor state 1"
+        },
+        {
+          "letter": "D",
+          "text": "The qubit will remain in state 0 or state 1"
+        }
+      ],
+      "answer": "B"
+    },
+    {
+      "number": 22,
+      "part": 4,
+      "stretch": false,
+      "stem": "A single qubit starts in an unknown state. The qubit is then measured, which returns state 0. The same unknown state is then prepared and measured again. What is certain about the results of the second measurement?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "It could be 0 or 1"
+        },
+        {
+          "letter": "B",
+          "text": "It will definitely be 0"
+        },
+        {
+          "letter": "C",
+          "text": "It will definitely be 1"
+        },
+        {
+          "letter": "D",
+          "text": "It is equally likely to be 0 or 1"
+        }
+      ],
+      "answer": "A"
+    },
+    {
+      "number": 23,
+      "part": 4,
+      "stretch": false,
+      "stem": "A qubit in an unknown state is measured, which returns state 0. What is known about the qubit’s state prior to the measurement?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "The qubit was in a superposition"
+        },
+        {
+          "letter": "B",
+          "text": "The qubit was in state 0"
+        },
+        {
+          "letter": "C",
+          "text": "The qubit was not in state 0"
+        },
+        {
+          "letter": "D",
+          "text": "The qubit was not in state 1"
+        }
+      ],
+      "answer": "D"
+    },
+    {
+      "number": 24,
+      "part": 3,
+      "stretch": true,
+      "stem": "A qubit starts in state 0. An H gate, an unknown gate, and an H gate are applied to the qubit. This quantum circuit ends with a measurement, which returns state 1 with a probability more than 0% but less than 50%. What common single-qubit gate could have been applied as the unknown gate?",
+      "figure": [
+        {
+          "start": "0",
+          "ops": [
+            "H",
+            "?",
+            "H",
+            "M"
+          ]
+        }
+      ],
+      "options": [
+        {
+          "letter": "A",
+          "text": "An S gate"
+        },
+        {
+          "letter": "B",
+          "text": "A T gate"
+        },
+        {
+          "letter": "C",
+          "text": "An X gate"
+        },
+        {
+          "letter": "D",
+          "text": "A Y gate"
+        }
+      ],
+      "answer": "B"
+    },
+    {
+      "number": 26,
+      "part": 4,
+      "stretch": false,
+      "stem": "A qubit starts in an unknown superposition state. An H gate is applied, followed by a measurement. How can the qubit be returned to its original unknown state?",
+      "figure": [
+        {
+          "ops": [
+            "H",
+            "M"
+          ]
+        }
+      ],
+      "options": [
+        {
+          "letter": "A",
+          "text": "Apply another H gate and then measure again"
+        },
+        {
+          "letter": "B",
+          "text": "Apply another H gate but do not measure again"
+        },
+        {
+          "letter": "C",
+          "text": "Measure the qubit again and then apply another H gate"
+        },
+        {
+          "letter": "D",
+          "text": "It is not possible to recover the initial unknown state"
+        }
+      ],
+      "answer": "D"
+    },
+    {
+      "number": 28,
+      "part": 4,
+      "stretch": false,
+      "stem": "How many possible measurement outcomes does a single qubit have immediately after a prior measurement in the same basis?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "Zero"
+        },
+        {
+          "letter": "B",
+          "text": "One"
+        },
+        {
+          "letter": "C",
+          "text": "Two"
+        },
+        {
+          "letter": "D",
+          "text": "Infinity"
+        }
+      ],
+      "answer": "B"
+    },
+    {
+      "number": 30,
+      "part": 1,
+      "stretch": false,
+      "stem": "How many possible measurement outcomes does a single qubit in a superposition state have?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "Zero"
+        },
+        {
+          "letter": "B",
+          "text": "One"
+        },
+        {
+          "letter": "C",
+          "text": "Two"
+        },
+        {
+          "letter": "D",
+          "text": "Infinity"
+        }
+      ],
+      "answer": "C"
+    },
+    {
+      "number": 31,
+      "part": 3,
+      "stretch": false,
+      "stem": "When are ideal quantum gates not reversible?",
+      "figure": null,
+      "options": [
+        {
+          "letter": "A",
+          "text": "Only when the qubits are entangled"
+        },
+        {
+          "letter": "B",
+          "text": "Only when the qubits are in superpositions"
+        },
+        {
+          "letter": "C",
+          "text": "Quantum gates are always reversible"
+        },
+        {
+          "letter": "D",
+          "text": "Quantum gates are never reversible"
+        }
+      ],
+      "answer": "C"
+    }
+  ]
+}

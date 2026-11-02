@@ -285,6 +285,9 @@ namespace Study.EditorTools
             rect.localScale = Vector3.one * 0.001f;
             Vector3 center = sphereCenter + new Vector3(0f, 0f, -0.12f);
             Vector3 side = sphereCenter + new Vector3(0.38f, 0f, -0.25f); // nearer, so it stays in the desktop frame
+            // The lesson's boxes: left of the sphere (the measurement panel is on the right), as near as
+            // the desktop frame allows while staying clear of the sphere and its labels.
+            Vector3 lesson = sphereCenter + new Vector3(-0.56f, 0f, -0.01f);
             rect.position = center;
             rect.rotation = Quaternion.LookRotation(center - eye);
 
@@ -325,49 +328,13 @@ namespace Study.EditorTools
             so.FindProperty("centerRotation").quaternionValue = Quaternion.LookRotation(center - eye);
             so.FindProperty("sidePosition").vector3Value = side;
             so.FindProperty("sideRotation").quaternionValue = Quaternion.LookRotation(side - eye);
+            so.FindProperty("lessonPosition").vector3Value = lesson;
+            so.FindProperty("lessonRotation").quaternionValue = Quaternion.LookRotation(lesson - eye);
             so.ApplyModifiedProperties();
             view.ApplyStyle();
             group.alpha = 0; // hidden until the intro shows a box
             group.interactable = false;
             group.blocksRaycasts = false;
-            return view;
-        }
-
-        // Narration text, lower left of the sphere: below the prompt panel, which only shows in
-        // pauses (when this is hidden). Same width, inside the desktop frame. Canvas units are mm.
-        public static CaptionPanelView AddCaptionPanel(StylePalette palette, Vector3 sphereCenter, Vector3 eye)
-        {
-            const float W = 240, H = 170;
-            var canvasObject = new GameObject("Caption Panel", typeof(RectTransform));
-            var canvas = canvasObject.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
-            var group = canvasObject.AddComponent<CanvasGroup>();
-            group.interactable = false;
-            group.blocksRaycasts = false;
-            var rect = (RectTransform)canvasObject.transform;
-            rect.sizeDelta = new Vector2(W, H);
-            rect.localScale = Vector3.one * 0.001f;
-            rect.position = sphereCenter + new Vector3(-0.38f, -0.125f, -0.25f);
-            rect.rotation = Quaternion.LookRotation(rect.position - eye);
-
-            Image background = Box(rect, "Background", 0, 0, W, H);
-            Image accentBar = Box(rect, "Accent Bar", 0, 0, 3, H);
-            TextMeshProUGUI body = Text(rect, "Body", "", 13, 12, 10, W - 12, H - 10, TextAlignmentOptions.TopLeft);
-            body.textWrappingMode = TextWrappingModes.Normal;
-            body.enableAutoSizing = true; // the longest lines shrink to fit
-            body.fontSizeMin = 9;
-            body.fontSizeMax = 13;
-
-            var view = canvasObject.AddComponent<CaptionPanelView>();
-            var so = new SerializedObject(view);
-            so.FindProperty("palette").objectReferenceValue = palette;
-            so.FindProperty("group").objectReferenceValue = group;
-            so.FindProperty("background").objectReferenceValue = background;
-            SetArray(so, "accents", accentBar);
-            so.FindProperty("body").objectReferenceValue = body;
-            so.ApplyModifiedProperties();
-            view.ApplyStyle();
-            group.alpha = 0; // hidden until the lesson starts
             return view;
         }
 

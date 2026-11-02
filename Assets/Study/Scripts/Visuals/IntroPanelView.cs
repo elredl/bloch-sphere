@@ -5,10 +5,11 @@ using UnityEngine.UI;
 
 namespace Study.Visuals
 {
-    // The intro's text box: a title, a body, an optional answer below a divider (shown
-    // later with RevealAnswer), and a NEXT button. It stands either in front of the
-    // learner (center) or beside a drawing (side); both poses are set by the editor
-    // scene setup. Fades in and out. Controller ray or mouse (PointerSupport).
+    // The text box of the intro and of the lesson: a title, a body, an optional answer
+    // below a divider (shown later with RevealAnswer), and a NEXT button. It stands in
+    // front of the learner (center), beside a drawing (side), or left of the lesson's
+    // sphere (lesson, clear of the measurement panel on the right); the poses are set by
+    // the editor scene setup. Fades in and out. Controller ray or mouse (PointerSupport).
     [ExecuteAlways]
     public class IntroPanelView : MonoBehaviour
     {
@@ -30,10 +31,16 @@ namespace Study.Visuals
         [SerializeField] Quaternion centerRotation = Quaternion.identity;
         [SerializeField] Vector3 sidePosition;
         [SerializeField] Quaternion sideRotation = Quaternion.identity;
+        [SerializeField] Vector3 lessonPosition;
+        [SerializeField] Quaternion lessonRotation = Quaternion.identity;
+
+        public enum Pose { Center, Side, Lesson }
 
         public event Action NextPressed;
 
         public bool IsShowing => target > 0;
+        // Where NEXT sits in the box (as last shown), for a Next button that stands in for it.
+        public Transform NextAnchor => nextButton.transform;
         public bool IsFaded => Mathf.Approximately(group.alpha, target);
 
         float target;
@@ -60,17 +67,18 @@ namespace Study.Visuals
         }
 
         // answerText: null for none; otherwise hidden until RevealAnswer.
-        public void Show(string titleText, string bodyText, string answerText, bool side, string nextText)
+        // nextText: null for a box without a NEXT button.
+        public void Show(string titleText, string bodyText, string answerText, Pose pose, string nextText)
         {
-            transform.localPosition = side ? sidePosition : centerPosition;
-            transform.localRotation = side ? sideRotation : centerRotation;
+            transform.localPosition = pose == Pose.Side ? sidePosition : pose == Pose.Lesson ? lessonPosition : centerPosition;
+            transform.localRotation = pose == Pose.Side ? sideRotation : pose == Pose.Lesson ? lessonRotation : centerRotation;
             title.text = titleText;
             body.text = bodyText;
             answer.text = answerText ?? "";
             answer.gameObject.SetActive(false);
             divider.gameObject.SetActive(false);
-            nextLabel.text = nextText;
-            nextButton.gameObject.SetActive(answerText == null);
+            nextLabel.text = nextText ?? "";
+            nextButton.gameObject.SetActive(answerText == null && nextText != null);
             target = 1;
         }
 

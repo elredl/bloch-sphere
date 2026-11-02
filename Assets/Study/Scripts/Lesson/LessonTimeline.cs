@@ -7,9 +7,10 @@ using UnityEngine;
 namespace Study.Lesson
 {
     // The lesson as data: segment and pause times, scripted events, and the
-    // pause tasks, all in seconds on the narration clip. Loaded from
-    // Assets/Study/Data/lesson_timeline.json. Swapping in the real narration
-    // means replacing the clip and editing the times in that file.
+    // pause tasks, all in lesson seconds. Loaded from
+    // Assets/Study/Data/lesson_timeline.json; the text boxes come from
+    // narration_captions.json. tools/narration_script.py writes the events, the
+    // segment times and the boxes from one ordered script.
     //
     // Shared by all three conditions. Nothing here may depend on the condition:
     // only the pause behavior (PauseDirector) differs between conditions.
@@ -83,6 +84,46 @@ namespace Study.Lesson
             public ulong demoSeed;
         }
 
+        // One text box of the self-paced lesson (narration_captions.json). Lesson time holds at
+        // its start until Next.
+        [Serializable]
+        public class Box
+        {
+            public double start;
+            public double end;
+            public string title;
+            public string text;
+        }
+
+        [Serializable]
+        class BoxFile
+        {
+            public Box[] lines;
+        }
+
+        public static Box[] BoxesFromJson(string json) => JsonUtility.FromJson<BoxFile>(json).lines ?? new Box[0];
+
+        // Boxes in order, not overlapping, outside the pauses, and with no event inside one:
+        // what a box describes happens before or after it, never while it is read.
+        public List<string> ValidateBoxes(Box[] boxes)
+        {
+            var errors = new List<string>();
+            double previousEnd = 0;
+            foreach (Box b in boxes)
+            {
+                string where = $"box at {b.start:F1}s";
+                if (string.IsNullOrWhiteSpace(b.text) || string.IsNullOrWhiteSpace(b.title)) errors.Add($"{where} has no title or text");
+                if (b.end <= b.start) errors.Add($"{where} ends before it starts");
+                if (b.start < previousEnd - 1e-6) errors.Add($"{where} overlaps the box before");
+                previousEnd = b.end;
+                foreach (Segment s in segments)
+                    if (b.end > s.pauseStart + 1e-6 && b.start < s.pauseEnd - 1e-6) errors.Add($"{where} overlaps the pause after {s.id}");
+                foreach (LessonEvent e in events)
+                    if (e.t >= b.start - 1e-6 && e.t < b.end - 1e-6) errors.Add($"{where} has an event inside it: {e}");
+            }
+            return errors;
+        }
+
         public static readonly string[] KnownEventTypes = { "set_state", "apply_gate", "show", "hide", "measure_demo" };
         public static readonly string[] KnownTargets = { "angle_arcs", "measurement_panel" };
 
@@ -92,10 +133,11 @@ namespace Study.Lesson
 
         // Every rule the timeline must satisfy. Empty list = valid.
         // The equal-pause and no-events-in-pauses rules protect the experimental invariant.
-        public List<string> Validate()
+        // segmentCount: 4 for the study's lesson, 1 for the demo's.
+        public List<string> Validate(int segmentCount = 4)
         {
             var errors = new List<string>();
-            if (segments == null || segments.Length != 4) errors.Add("expected exactly 4 segments");
+            if (segments == null || segments.Length != segmentCount) errors.Add($"expected exactly {segmentCount} segments");
             if (pauseSchedule == null) { errors.Add("missing pauseSchedule"); return errors; }
             if (segments == null || events == null || pauseTasks == null) { errors.Add("missing segments, events or pauseTasks"); return errors; }
 

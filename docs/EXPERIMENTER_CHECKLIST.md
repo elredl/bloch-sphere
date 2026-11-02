@@ -33,6 +33,9 @@ Room: non-swivel, non-rolling chair; same chair position for every participant.
 
 ## Each session
 
+0. Pretest on the laptop: `python3 tools/quiz.py` (opens the browser; F11 for full screen).
+   Enter the code, pick Pretest, Check, Start, hand the laptop over. After the lesson, the
+   same with Posttest. A finished quiz can't be retaken under the same code and phase.
 1. Start the app. The launch screen appears.
 2. Pick the participant's code from the list (it shows only codes from allocation.csv that are
    unused and belong on this device: Quest runs conditions 2 and 3, desktop runs 1). The screen
@@ -46,8 +49,10 @@ Room: non-swivel, non-rolling chair; same chair position for every participant.
    (the screen keeps saying "Sit upright and look straight ahead" until then). Hand over the
    controllers. A does nothing at any other time, except on the resume screen after a break.
    **Desktop**: seat the participant at the monitor.
-5. The participant pulls the trigger (desktop: clicks) when ready. Orientation runs exactly
-   2:00, then the lesson (15:00) starts by itself. Do not talk during the lesson.
+5. The participant pulls the trigger (desktop: clicks) when ready. Orientation is one practice
+   round; the lesson starts 10 s after it is done (at most 2:00 in all). The lesson is
+   self-paced: the participant presses Next after every text box and turn. Do not talk
+   during the lesson.
 6. At the end screen the participant takes off the headset (or looks away) and tells you.
 7. Press **Experimenter** on the end screen. Note the file name and event count on the
    session sheet. Press **Quit**.
@@ -83,4 +88,7 @@ Room: non-swivel, non-rolling chair; same chair position for every participant.
       headset. `session_index.csv` is copied and stays on the headset.
 - [ ] The script says `verified N files`; N matches the session sheet.
 - [ ] Desktop: copy the `P*_C1_*.csv` files from the desktop data folder to the same archive.
+- [ ] Then add the quiz answers to them: `python3 tools/merge_quiz.py <that folder>`. pull_data
+      already did this for the Quest files: its last lines list each participant and say
+      `MISSING` if a pretest or posttest is not there.
 - [ ] Back up the archive.

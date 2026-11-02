@@ -19,7 +19,7 @@ The headset and desktop versions differ only where the input or device differs.
 |  | step 2: press | Point at the button and pull the trigger. | Click the button. |
 |  | button label | PRESS | same |
 |  | step 3: rotate | Squeeze the grip to grab the glowing handle, then turn the cube the way the arrow points. Let go when it stops. | Press and hold the mouse button on the glowing handle, then drag to turn the cube the way the arrow points. Let go when it stops. |
-|  | after a round | Well done. You can practise again until the lesson begins. | same |
+|  | after a round | Well done. The lesson begins in a few seconds. | same |
 | Break | break (headset off, or B on the desktop) | PAUSED | same |
 |  | while paused | The lesson is paused. | same |
 |  | headset back on | Pull the trigger to continue. | (not shown) |
@@ -45,15 +45,21 @@ only. watchHint: Conditions 1 and 2 only.
 
 | Key | Text |
 |---|---|
+| placeTitle | PLACE |
+| placeHint | Grab the tip of the dim vector and move it to where the turn will take it, or point at a marker. Then press Lock in. |
+| placeHintDesktop | Drag the tip of the dim vector to where the turn will take it, or click a marker. Then click Lock in. |
+| placeHintList | Pick the state the turn will take the vector to. |
+| placeHintListHeight | Pick how far the vector will be from \|0⟩. |
+| lockLabel | Lock in |
+| chooseHint | You can still change your answer. Press Lock in when you are sure. |
 | predictTitle | PREDICT |
 | turnTitle | TURN |
 | positionHint | Point at a marker on the sphere and pull the trigger. |
 | positionHintDesktop | Click a marker on the sphere. |
 | lockedLine | Your prediction: {0} |
 | gateHint | Press the button to apply the turn. |
-| timeoutHint | Time to apply the turn. Press the button. |
-| rotateHint | Grab the tip of the vector and turn it the way the arrow points. Let go when it stops. |
-| watchHint | Watch the turn. |
+| rotateHint | Watch the turn. The dim vector is your prediction. |
+| turnGuide | Squeeze the grip to grab the tip of the arrow, then turn it the way the amber guide points. Let go when it stops. |
 | correctTitle | CORRECT |
 | incorrectTitle | NOT QUITE |
 | neutralTitle | RESULT |
@@ -63,44 +69,41 @@ only. watchHint: Conditions 1 and 2 only.
 - Answers: 100%, 75%, 50%, 25%, 0%
 - Button: Quarter turn toward |1⟩
 - Prompt: After a quarter turn toward |1⟩, how often will a measurement give 0?
-- Correct: Yes, 50%. A quarter turn takes the vector from the top of the sphere to the equator, where 0 and 1 are equally likely.
-- No prediction made: A quarter turn took the vector from |0⟩ at the top to the equator. There, 0 and 1 are equally likely: 50% each.
-- Other wrong answers: It is 50%. The quarter turn brought the vector to the equator, exactly halfway between |0⟩ and |1⟩, so both outcomes are equally likely.
-- Wrong answer 100 (rotation_does_not_change_outcome): It is 50%. The turn did change the state: the vector moved from |0⟩ at the top down to the equator, where 0 and 1 are equally likely.
-- Wrong answer 0 (quarter_turn_reaches_one): It is 50%. A quarter turn moves the vector only halfway from |0⟩ to |1⟩, to the equator. Reaching |1⟩ takes a half turn.
+- Correct: Yes, 50%: on the equator, 0 and 1 are equally likely.
+- No prediction made: 50%: on the equator, 0 and 1 are equally likely.
+- Other wrong answers: A quarter turn from the top lands on the equator, where 0 and 1 are equally likely.
+- Wrong answer 100 (rotation_does_not_change_outcome): A quarter turn from the top lands on the equator, where 0 and 1 are equally likely.
+- Wrong answer 0 (quarter_turn_reaches_one): A quarter turn from the top lands on the equator, where 0 and 1 are equally likely.
 
 ### pause2
 
-- Answers: |0⟩, |1⟩, |+⟩, |−⟩, |+i⟩, |−i⟩
-- Button: Quarter turn about z
-- Prompt: After a quarter turn about z, where will the vector point?
-- Correct: Yes, |+i⟩. A quarter turn about z swings the vector a quarter of the way around the equator, from |+⟩ to |+i⟩.
-- No prediction made: A quarter turn about z swung the vector a quarter of the way around the equator, from |+⟩ to |+i⟩.
-- Other wrong answers: It ends at |+i⟩. A quarter turn about z moves the vector a quarter of the way around the equator, from |+⟩ to |+i⟩.
-- Wrong answer -i (wrong_rotation_direction): It ends at |+i⟩. Turns follow the right-hand rule: with your thumb along +z, your fingers curl from |+⟩ toward |+i⟩, not toward |−i⟩.
-- Wrong answer 0, 1 (polar_azimuthal_confusion): It ends at |+i⟩. A turn about z changes only the angle around the equator, never the height, so the vector cannot move toward |0⟩ or |1⟩.
-- Wrong answer + (z_rotation_does_nothing): It ends at |+i⟩. A turn about z leaves |0⟩ and |1⟩ alone because they sit on the z axis, but |+⟩ is on the equator, so it swings around.
+- Answers: 100%, 75%, 50%, 25%, 0%
+- Button: S: quarter turn about z
+- Prompt: After S, how often will a measurement give 0?
+- Correct: Yes, 50%: S keeps the vector on the equator.
+- No prediction made: 50%: S keeps the vector on the equator.
+- Other wrong answers: S turns about the z axis, so it changes only the phase. The vector stays on the equator, and so does the 50/50 chance.
+- Wrong answer 100, 0 (polar_azimuthal_confusion): S turns about the z axis, so it changes only the phase. The vector stays on the equator, and so does the 50/50 chance.
 
 ### pause3
 
-- Answers: |0⟩, |1⟩, |+⟩, |−⟩, |+i⟩, |−i⟩
+- Answers: 100%, 75%, 50%, 25%, 0%
 - Button: H
-- Prompt: After H, where will the vector point?
-- Correct: Yes, |0⟩. H is a half turn about the axis between x and z. It swaps |0⟩ and |+⟩, so it brings |+⟩ back to |0⟩.
-- No prediction made: H is a half turn about the axis between x and z. It swaps |0⟩ and |+⟩, so the vector went from |+⟩ back to |0⟩.
-- Other wrong answers: It ends at |0⟩. H is a half turn about the axis between x and z. It swaps |0⟩ and |+⟩, so it brings |+⟩ back to |0⟩.
-- Wrong answer + (h_always_creates_superposition): It ends at |0⟩. H does not always make a superposition. It is a half turn that swaps |0⟩ and |+⟩, so from |+⟩ it gives |0⟩.
-- Wrong answer -, +i, -i (superposition_cannot_become_definite): It ends at |0⟩. A superposition can turn back into a definite state: the same H that took |0⟩ to |+⟩ takes |+⟩ back to |0⟩.
-- Wrong answer 1 (h_confused_with_x): It ends at |0⟩. H is not X. X is a half turn about x and swaps |0⟩ and |1⟩. H turns about the axis between x and z and swaps |0⟩ and |+⟩.
+- Prompt: After H, how often will a measurement give 0?
+- Correct: Yes, 0%: at |1⟩, every measurement gives 1.
+- No prediction made: 0%: at |1⟩, every measurement gives 1.
+- Other wrong answers: It is 0%: at |1⟩, every measurement gives 1.
+- Wrong answer 100 (h_always_undoes_h): |−⟩ is not |+⟩. H turns |−⟩ all the way down to |1⟩, so 0 never comes up.
+- Wrong answer 50 (h_always_creates_superposition): It is 0%: here H gives |1⟩, not a superposition.
 
 ### pause4
 
 - Answers: 100%, 75%, 67%, 50%, 25%
 - Button: 60° turn toward |1⟩
 - Prompt: After a 60° turn toward |1⟩, how often will a measurement give 0?
-- Correct: Yes, 75%. After a 60° turn the vector is still closer to |0⟩, so 0 comes up 75% of the time, as the measurements showed.
-- No prediction made: After a 60° turn the vector is still closer to |0⟩, so 0 comes up 75% of the time, as the measurements showed.
-- Other wrong answers: It is 75%. After a 60° turn the vector is still closer to |0⟩ than to |1⟩, so 0 is the more likely outcome, as the measurements showed.
-- Wrong answer 50 (any_superposition_is_50_50): It is 75%. Only states on the equator are 50/50. After a 60° turn the vector is still closer to |0⟩, so 0 is more likely.
-- Wrong answer 67 (probability_linear_in_angle): It is 75%, not 67%. The chance does not fall evenly with the angle. A 60° turn lowers the tip only a quarter of the way down the sphere.
-- Wrong answer 100 (only_equator_is_superposition): It is 75%. Any tilt away from |0⟩ makes a superposition, not just the equator. After a 60° turn, 1 already comes up 25% of the time.
+- Correct: Yes, 75%, as measured.
+- No prediction made: 75%, as measured.
+- Other wrong answers: It is 75%, as measured.
+- Wrong answer 50 (any_superposition_is_50_50): 75%: only the equator is 50/50.
+- Wrong answer 67 (probability_linear_in_angle): 60° is a third of the way to |1⟩, but the chance follows height, not angle. The tip sits at height ½, so 0 comes up 3 times out of 4.
+- Wrong answer 100 (only_equator_is_superposition): 75%: any tilt gives some 1s.

@@ -21,6 +21,9 @@ namespace Study.Visuals
 
         public event Action Pressed;
 
+        Vector3 homePosition;
+        Quaternion homeRotation;
+
         void OnEnable()
         {
             StylePalette.Edited += OnPaletteEdited;
@@ -38,13 +41,27 @@ namespace Study.Visuals
         void Awake()
         {
             if (!Application.isPlaying) return;
+            homePosition = transform.localPosition; // local: calibration moves the stage later
+            homeRotation = transform.localRotation;
             button.onClick.AddListener(Press);
             button.gameObject.AddComponent<PositionMarkersView.HoverRelay>().Changed = SetHover;
         }
 
         public bool IsVisible => group.alpha > 0;
 
-        public void Show() => SetVisible(true);
+        // At its own place (the pauses).
+        public void Show()
+        {
+            transform.SetLocalPositionAndRotation(homePosition, homeRotation);
+            SetVisible(true);
+        }
+
+        // Somewhere else: the lesson's steps put it where the text box's NEXT sits.
+        public void ShowAt(Transform anchor)
+        {
+            transform.SetPositionAndRotation(anchor.position, anchor.rotation);
+            SetVisible(true);
+        }
 
         public void Hide() => SetVisible(false);
 
@@ -58,6 +75,9 @@ namespace Study.Visuals
             button.interactable = on;
             SetHover(false);
         }
+
+        // The demo's sandbox labels it DONE.
+        public void SetLabel(string text) => label.text = text;
 
         // Editor and dev runs: the same path as a click.
         public void Press()

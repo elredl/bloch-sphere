@@ -1,0 +1,30 @@
+{
+    "lessonDuration": 150.0,
+    "reprepareDuration": 0.6,
+
+    "pauseSchedule": {
+        "pauseLength": 60.0,
+        "arcDuration": 3.0
+    },
+
+    "segments": [
+        {"id": "demo", "start": 0.0, "pauseStart": 90.0, "pauseEnd": 150.0, "task": "sandbox"}
+    ],
+
+    "events": [
+        {"t": 1.0, "type": "set_state", "state": "0"},
+        {"t": 32.2, "type": "apply_gate", "gate": "X", "duration": 3.0},
+        {"t": 51.4, "type": "apply_gate", "gate": "H", "duration": 3.0},
+        {"t": 67.1, "type": "measure_demo", "state": "-", "shots": 100, "seed": 27},
+        {"t": 88.5, "type": "hide", "target": "measurement_panel"}
+    ],
+
+    "pauseTasks": [
+        {
+            "id": "sandbox", "startState": "-", "gate": "H", "placementMatch": "point",
+            "operationLabel": "",
+            "prediction": "p0", "choices": ["50"], "correct": "50",
+            "measurementDemo": false, "demoShots": 0, "demoSeed": 0
+        }
+    ]
+}

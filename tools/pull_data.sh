@@ -42,3 +42,7 @@ fi
 for f in "${files[@]}"; do adb shell "rm '$REMOTE/$f'"; done
 left=$(adb shell "ls $REMOTE/ 2>/dev/null" | tr -d '\r' | grep -cE '_C[123]_.*\.csv$' || true)
 echo "verified $ok files; removed them from the headset ($left session files left there)"
+# Append each participant's laptop quiz (tools/quiz.py) to their session file.
+PY="$(command -v python3 || command -v python || true)"
+if [ -n "$PY" ]; then "$PY" "$(dirname "$0")/merge_quiz.py" "$dest" --quiz "$DEST_ROOT/quiz"
+else echo "python not found: run tools/merge_quiz.py $dest later to add the quiz answers"; fi

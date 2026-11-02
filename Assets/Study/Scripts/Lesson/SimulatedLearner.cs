@@ -10,12 +10,16 @@ namespace Study.Lesson
     // a headset. It uses the same entry points as the real controls: a grab point fed to
     // EmbodiedPause exactly as QubitGrabTarget feeds it, the panel's buttons and answer
     // picks, and the Next button. Cond 2 has no grab or gate button: it picks its
-    // placement from the list and watches the turn.
+    // placement from the list and watches the turn. Outside the pauses it reads each box
+    // for BoxSeconds and presses Next, presses Next StepSeconds after each step, and in
+    // Condition 3 makes each lesson turn in two grabs (letting go halfway, like a learner
+    // who has to regrip), through GuidedTurn's entry points.
     // Added by LessonDevTools.SimulateLearner; never part of the saved scene.
     public class SimulatedLearner : MonoBehaviour
     {
         const double DragSeconds = 1.5;
         const double LockDelay = 1.0; // a list pick is locked in this long after it is made
+        const double BoxSeconds = 2.0, StepSeconds = 0.5, TurnGrabSeconds = 0.8; // lesson seconds, on Now
 
         // One learner behavior, times in seconds from pause onset. Pauses are untimed, so
         // each step waits until both its time has come and the pause has reached it.
@@ -47,7 +51,14 @@ namespace Study.Lesson
         PredictionPanelView panel;
         PositionMarkersView markers;
         NextButtonView next;
+        IntroPanelView box;
         LessonController lesson;
+        GuidedTurn turn;
+        QubitState state;
+        double readySince = -1;
+        int turnGrab;          // 0 none yet, 1 first grab (to halfway), 2 second grab (to the end)
+        double turnGrabStart;
+        BlochVector turnTip;   // the tip when the turn began
         int pauseSeen = -1;
         bool dragging, dragged, placePicked, lockPressed, firstPicked, answered, answerLocked, pressed, nextPressed;
         double dragStart, answeredAt;
@@ -61,11 +72,15 @@ namespace Study.Lesson
             panel = predictionPanel;
             markers = positionMarkers;
             next = FindAnyObjectByType<NextButtonView>();
+            box = FindAnyObjectByType<IntroPanelView>();
             lesson = FindAnyObjectByType<LessonController>();
+            turn = FindAnyObjectByType<GuidedTurn>();
+            state = FindAnyObjectByType<QubitState>();
         }
 
         void Update()
         {
+            LessonSteps();
             if (pause == null || pause.Current == EmbodiedPause.Phase.Idle) return;
             if (pause.PauseNumber != pauseSeen) StartPause();
             Profile p = profiles[Math.Min(pause.PauseNumber - 1, profiles.Length - 1)];
@@ -121,6 +136,59 @@ namespace Study.Lesson
                 next.Press();
             }
         }
+
+        void LessonSteps()
+        {
+            if (lesson == null || !lesson.IsRunning || lesson.OnBreak || lesson.InPause) return;
+            if (turn != null && turn.Active) MakeTurn();
+            else if (turnGrab != 0) turnGrab = 0;
+
+            // A box's NEXT is in the box (clickable once it has faded in); a step's is the button.
+            bool onBox = lesson.Holding == LessonController.Hold.Box;
+            bool shown = onBox ? box.IsShowing && box.IsFaded : next.IsVisible;
+            if (!lesson.ReadyForNext || !shown)
+            {
+                readySince = -1;
+                return;
+            }
+            if (readySince < 0) readySince = lesson.Now;
+            if (lesson.Now - readySince >= (onBox ? BoxSeconds : StepSeconds))
+            {
+                readySince = -1;
+                if (onBox) box.Press();
+                else next.Press();
+            }
+        }
+
+        // The hand starts on the tip and sweeps about the gate's axis: to halfway, let go,
+        // grab again, then a little past the end.
+        void MakeTurn()
+        {
+            Gate gate = turn.Gate;
+            if (turnGrab == 0)
+            {
+                turnTip = state.Current.Bloch;
+                turnGrab = 1;
+                turnGrabStart = lesson.Now;
+                turn.GrabStarted("sim", () => HandAt(gate, 0.5 * Progress()));
+            }
+            else if (Progress() >= 1 && turnGrab == 1)
+            {
+                turn.GrabEnded(); // halfway: short of the end, logged as turn_release
+                turnGrab = 2;
+                turnGrabStart = lesson.Now;
+                turn.GrabStarted("sim", () => HandAt(gate, 0.5 + 0.6 * Progress()));
+            }
+            else if (Progress() >= 1 && turnGrab == 2)
+            {
+                turn.GrabEnded();
+                turnGrab = 3; // done; GuidedTurn is no longer active by the next frame
+            }
+        }
+
+        double Progress() => Math.Min(1, (lesson.Now - turnGrabStart) / TurnGrabSeconds);
+
+        BlochVector HandAt(Gate gate, double fraction) => turnTip.RotatedAbout(gate.Axis, gate.Angle * fraction);
 
         void StartPause()
         {

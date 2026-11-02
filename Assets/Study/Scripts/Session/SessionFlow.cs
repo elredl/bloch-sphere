@@ -22,6 +22,10 @@ namespace Study.Session
     // where it is (narration, lesson time and effects); the headset break ends with a trigger
     // pull once it is back on. Abort (hold both grips and both thumbsticks 3 s, or Esc 2 s)
     // ends the session from any step.
+    //
+    // The in-person demo app (Demo scene, LessonController.IsDemo) uses the same flow without
+    // the launch screen, orientation and intro: calibrate, ready, the demo lesson and its
+    // sandbox, then the scene starts over for the next visitor, each with its own log file.
     [DefaultExecutionOrder(-50)]
     public class SessionFlow : MonoBehaviour
     {
@@ -82,7 +86,12 @@ namespace Study.Session
         {
             session = StudySession.Current;
             bool devSession = session == null;
-            if (devSession)
+            if (lesson.IsDemo)
+            {
+                session = StudySession.Start("DEMO" + DateTime.Now.ToString("HHmmss"), lesson.Config.Condition, "novice", "demo");
+                devSession = false; // the demo always calibrates, also in the Editor
+            }
+            else if (devSession)
             {
                 if (!Application.isEditor)
                 {
@@ -219,6 +228,11 @@ namespace Study.Session
 
         void StartOrientation()
         {
+            if (lesson.IsDemo)
+            {
+                StartLesson(); // no practice in the demo: the guided turns explain themselves
+                return;
+            }
             step = Step.Orientation;
             SetInteractors(headset);
             orientation.Begin(text, !headset);
@@ -244,8 +258,8 @@ namespace Study.Session
             lesson.Begin();
         }
 
-        // The Next button needs a pointer in every pause: the controller rays (Cond 2 has
-        // them only then) or the mouse (Cond 1 hides it while the narration plays).
+        // The lesson is self-paced: every box and step ends with Next, so the pointer stays on
+        // for the whole lesson, the controller rays or the mouse in Condition 1.
         void OnPauseStarted(int index, LessonTimeline.Segment segment, LessonTimeline.PauseTask task, double onset) => ApplyLessonPointer();
 
         void OnPauseEnded(int index) => ApplyLessonPointer();
@@ -253,13 +267,18 @@ namespace Study.Session
         void ApplyLessonPointer()
         {
             if (step != Step.Lesson || OnBreak) return;
-            SetInteractors(lesson.Config.LearnerRotates || lesson.InPause);
-            if (!lesson.Config.UsesHeadset) DesktopDisplay.SetCursorHidden(!lesson.InPause);
+            SetInteractors(headset);
+            if (!lesson.Config.UsesHeadset) DesktopDisplay.SetCursorHidden(false);
         }
 
         void OnLessonEnded()
         {
             session.Finish("completed");
+            if (lesson.IsDemo)
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); // the next visitor
+                return;
+            }
             EnterEnd(false);
         }
 

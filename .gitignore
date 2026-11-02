@@ -118,3 +118,6 @@ InitTestScene*.unity*
 
 # Editor dry-run session data (StudySession.DataDirectory in the Editor)
 /DevData/
+
+# Participant data pulled from the headset and the laptop quiz
+/study_data/

@@ -55,6 +55,7 @@ namespace Study.Lesson
 
         void OnPauseStarted(int index, LessonTimeline.Segment segment, LessonTimeline.PauseTask pauseTask, double pauseOnset)
         {
+            if (lesson.IsDemo) return; // the demo's one pause is the sandbox (DemoSandbox)
             pauseIndex = index;
             task = pauseTask;
             arcDone = false;

@@ -21,12 +21,13 @@ Unity, change the render pipeline (URP 17.6), or change packages without asking.
 
 ## The experimental invariant (most important rule)
 
-The three conditions are identical in narration audio, segment order, segment
-content, pause count, and maximum pause length. Pauses are learner-paced (see
-Next button below), so actual pause length and total time on task vary per
-learner and are logged; the Next button itself is the same in every condition.
-They differ only in
-display and whether the learner manipulates the qubit. Prediction prompts,
+The three conditions are identical in lesson text, segment order, segment
+content and pause count. The whole lesson is self-paced (decided 2026-10-30, see
+Self-paced lesson below): every text box, every turn and every pause ends with
+Next, so time on task varies per learner and is logged; the Next button itself
+is the same in every condition. They differ only in display and whether the
+learner manipulates the qubit: in Cond 3 the learner also makes every turn of
+the lesson (decided 2026-10-30, Guided turns below). Prediction prompts,
 feedback and pause dimming are identical in all three conditions (decided
 2026-10-29, so that Cond 2 vs Cond 3 isolates the hand interaction instead of
 bundling it with prediction and feedback). Shared lesson content changes apply
@@ -48,32 +49,65 @@ Condition 1 is a desktop build of the same lesson.
 Known, accepted differences (report in the paper, do not "fix"):
 - Cond 1 has a fixed viewpoint; the HMD conditions allow head motion. This is
   part of the display manipulation.
+- Cond 3 makes every lesson turn by hand (21 turns) where Cond 1/2 watch
+  each one play (3 s), so Cond 3 spends longer on the lesson; `turn_done` logs
+  each turn's time and `lesson_end` the total in steps.
 - Cond 1/2 learners watch the turn (about 3 s) where Cond 3 learners make it
   (gate press and grab), so the pause is busier in Cond 3 and pause length
   under Next may differ by condition (`pause_skipped` records it).
 
 ## Lesson content
 
-One narrated lesson, about 15 minutes, four segments in order:
-1. Superposition
-2. The Bloch sphere (narration must introduce "rotation about an axis")
-3. Single-qubit gates
-4. Measurement
+One lesson, four segments in order (revamp, `docs/LESSON_ITINERARY_DRAFT.md`):
+1. One qubit on the Bloch sphere
+2. Gates are turns
+3. Undoing and combining gates
+4. Interference and measurement
 
-Each segment ends in a **60 s** pause (four pauses, 4 min total). The narration
-is one audio file with the pauses built in as silences. Until it exists, a
-placeholder clip is used and everything is driven by a data-driven timeline
-(JSON) listing segment and pause times and the scripted events. Swapping in
-the real narration means replacing the clip and editing timestamps only. The draft
-script, timed against the timeline and checked by `tools/narration_script.py`, is
-`docs/NARRATION_SCRIPT.md`.
+One storyline (revised script, 2026-11-02): height sets the measurement odds,
+while the direction around the equator (phase) is hidden until a gate like H
+turns it into height. Part 1 raises the question, part 2 names phase, part 3
+shows interference (H H against H Z H), part 4 makes the height rule
+quantitative, P(0) = (1 + height) / 2. The intro (9 boxes) explains how four
+real numbers become two angles on a sphere and promises that phase matters.
 
-While the placeholder plays, the script is shown as text (all conditions): the
-current line, by lesson time, in a panel lower left of the sphere, hidden in
-pauses (the prompt panel sits above it). Kets are written as symbols (|0>, not
-"ket zero"). The lines come from `Assets/Study/Data/narration_captions.json`,
-which `tools/narration_script.py` writes. Assigning a recorded clip turns the
-text off. Whether the real lesson keeps captions is an open design decision.
+Each segment ends in a pause (four pauses). The text, the scripted turns between
+its boxes and the segment times all come from one ordered script in
+`tools/narration_script.py`, which writes `Assets/Study/Data/narration_captions.json`
+(the boxes), the events and segment times in `lesson_timeline.json`, and
+`docs/NARRATION_SCRIPT.md` for review. Kets are written as symbols (|0⟩, not
+"ket zero"). The text is the revised script of 2026-11-02.
+
+### Self-paced lesson (all conditions)
+
+- The lesson alternates text and animation so attention is never split: a text
+  box shows with NEXT inside it; after Next the box goes and the turn that
+  follows plays, then Next again; then the next box.
+- The boxes are the intro's box (same panel, title, fade and NEXT), left of the
+  sphere, clear of it and of the measurement panel, inside the desktop frame.
+  After a step, the Next button stands where the box's NEXT was, so Next is
+  always in one place outside the pauses. In Cond 3 the box shows the guide
+  text (title TURN, no NEXT) while a turn waits for the learner.
+- Every turn is its own step. Turns that would only return the arrow to a
+  starting point are re-preparations instead. The measurement demo is a step too. Re-preparations (fade out, fade in) are not steps; they
+  happen as the next box appears.
+- Lesson time stops at each box and step until Next (a hold) and then jumps to
+  the next item, so nobody waits on lesson time. Logged: `box_shown`, `box_next`
+  (seconds on the box), `step_next` (seconds in the step).
+- A placeholder tone track still plays (silenced in holds). A recorded narration
+  would need one clip per box; not planned yet.
+
+### Guided turns (Condition 3)
+
+- Every turn in the lesson is made by the learner: the gate's axis shows with
+  the amber direction guide at the tip of the arrow, the panel says what to do,
+  and the learner grabs the tip and turns it. It is the orientation ratchet: the
+  arrow only follows the hand forward along the gate's arc and stops at its end.
+  Letting go within 10 deg of the end finishes the turn (the rest plays in
+  0.3 s); short of it, grab again. Then Next shows.
+- Logged: `turn_start`, `turn_grab`, `turn_release` (let go short), `turn_done`
+  (grabs, seconds).
+- Cond 1/2 watch the same turn play as a 3 s arc. The end state is the same.
 
 Pause length tuning: run internal dry runs with labmates first. If more than
 about 1 in 5 Cond 3 attempts time out, lengthen all four pauses by the same
@@ -151,9 +185,9 @@ amount, then freeze.
 
 - A NEXT button to the right of the sphere, below the measurement panel. It
   appears once the prediction is over (answer locked, or the 25 s deadline
-  passed), so the question can't be skipped, and stays until the pause ends. Controller ray in the headset (Cond 2 gets its
-  rays only during pauses), mouse on the desktop (the cursor shows only during
-  pauses).
+  passed), so the question can't be skipped, and stays until the pause ends. Controller ray in the headset, mouse on the
+  desktop (both on for the whole lesson). The same button ends every box and
+  step outside the pauses.
 - Pressing it ends the pause at once: the narration jumps to the pause's end
   and the next segment starts. Whatever in the pause has not happened yet is
   skipped (the turn, feedback, pause 4 measurement demo); the
@@ -193,9 +227,9 @@ amount, then freeze.
   out at the sphere, so pointing moves it. A grab that starts with the
   controller within 15 cm of the tip is logged as `near`, otherwise `ray`.
 - The grab handle exists in the shared Cond 2/3 build but only switches on in
-  Cond 3, and only between the gate press and the end of the rotation.
-- Cond 2 learners see their controllers (same as Cond 3); their pointer rays
-  switch on only during pauses, for the prediction and the Next button.
+  Cond 3: while placing a prediction, and during each guided lesson turn.
+- Cond 2 learners see their controllers and pointer rays (same as Cond 3) for
+  the whole lesson, for the Next button, the prediction and the list picks.
 
 ### Measurement demo
 
@@ -365,19 +399,20 @@ app_paused, focus_lost or user_absent; head offset from the calibrated eye) /
 - Calibration at the start of orientation: participant sits upright facing
   forward, experimenter presses recenter, the app records eye height and places
   the sphere center 0.25 m below eye level and 0.8 m forward.
-- Orientation: fixed 2:00 in every condition, same neon environment, same
+- Orientation: one practice round in every condition, same neon environment, same
   guided practice sequence: ratchet-rotate a glowing cube about a fixed axis,
   ray-select one of several targets, press a button. Cond 2 practices grabbing
   too (matched exposure with Cond 3). Cond 1 does the same with the mouse.
-  Completed steps are logged. Early finishers get free practice until 2:00;
-  unfinished is logged as `orientation_incomplete`, never extended.
+  Completed steps are logged. Orientation ends 10 s after the round is done
+  (decided 2026-10-30, was a fixed 2:00); a round not done by 2:00 is logged as
+  `orientation_incomplete` and the lesson starts anyway.
 - Cond 1 camera: fixed at the calibrated-equivalent eye point, pitched to
-  center the sphere, 60 deg vertical FOV. Cursor hidden while the narration
-  plays; the mouse is used in orientation, for the Next button in pauses, and
+  center the sphere, 60 deg vertical FOV. The cursor shows for the whole lesson
+  (every box and step ends with Next); the mouse is also used in orientation and
   on the end screen.
 - Cond 1 display (Checkpoint 5, `DesktopDisplay`): 1920 x 1080 borderless
   fullscreen, vsync on (one frame per refresh at 60 Hz), not resizable,
-  cursor hidden and locked from lesson start to lesson end. The app logs a
+  cursor visible and free (the self-paced lesson needs it for Next). The app logs a
   `[Display]` line with what the monitor actually gave and warns if it is not
   1920 x 1080 at 60 Hz; `[Frames]` lines report the frame rate as in the
   headset. XR never starts on desktop: the desktop target has no XR loader and
@@ -424,7 +459,15 @@ app_paused, focus_lost or user_absent; head offset from the calibrated eye) /
   - Breaks are reported in the paper with withdrawals and protocol deviations,
     by condition.
 
-Questionnaires and tests happen on a tablet outside the app.
+Questionnaires happen outside the app. The knowledge test is 17 of the 31 QISCIT v1.0
+items (the ones the lesson targets, `docs/LESSON_ITINERARY_DRAFT.md`), taken on the laptop
+as a pretest before the lesson and a posttest after it: `tools/quiz.py` (browser page, items
+and key in `tools/quiz/qiscit.json`, glossary always available, no right/wrong shown). It
+logs in the session file's columns to `study_data/quiz/<code>_quiz-<phase>_<time>.csv`;
+`tools/merge_quiz.py` (run by `pull_data`) appends those rows to the participant's session
+file and fills in condition and stratum. Events: `quiz_start`, `quiz_item`, `quiz_choice`,
+`quiz_answer` (item, choice, correct, seconds), `quiz_glossary`, `quiz_end` (score, core
+15, stretch 2).
 
 ## Coordinate convention
 

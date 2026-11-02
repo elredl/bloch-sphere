@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Study.Session
 {
-    // Orientation (spec, Session flow): a fixed 2:00 in every condition, in the lesson's
+    // Orientation (spec, Session flow): one practice round in every condition, in the lesson's
     // environment, practising the three moves of a Condition 3 pause in the order the lesson
     // uses them:
     //   select   point at the lit ring and pull the trigger (Cond 1: click it)
@@ -16,9 +16,9 @@ namespace Study.Session
     //   rotate   grab the cube's handle and ratchet-turn it 90 deg about its axis
     //            (Cond 1: drag it with the mouse)
     // Conditions 2 and 3 do exactly the same (matched exposure). Each completed step is
-    // logged. Learners who finish practise again until 2:00; if the first round is not
-    // done by then it is logged as orientation_incomplete. Never extended. The clock uses
-    // scaled time, so a break (time scale 0) holds it.
+    // logged. Orientation ends doneSeconds after the round is done; a round not done by
+    // maxSeconds is logged as orientation_incomplete and the lesson starts anyway. The
+    // clock uses scaled time, so a break (time scale 0) holds it.
     public class Orientation : MonoBehaviour
     {
         public enum Step { Select, Press, Rotate, RoundDone }
@@ -30,10 +30,10 @@ namespace Study.Session
         [SerializeField] GateDirectionView arrow;
         [SerializeField] GateAxisView axis;
         [SerializeField] PracticeGrab grab;
-        [SerializeField] float durationSeconds = 120f;
+        [SerializeField] float maxSeconds = 120f;
+        [SerializeField] float doneSeconds = 10f;
         [SerializeField] float turnDegrees = 90f;
         [SerializeField] float toleranceDegrees = 10f;
-        [SerializeField] float roundDoneSeconds = 2.5f;
 
         static readonly int[] LitSequence = { 2, 0, 4, 1, 3 };
 
@@ -48,7 +48,7 @@ namespace Study.Session
 
         SessionText text;
         bool desktop, paused;
-        double elapsed, roundDoneAt;
+        double elapsed, endAt;
         int round;
         Step step;
         Gate turn;
@@ -85,13 +85,14 @@ namespace Study.Session
             desktop = isDesktop;
             turn = Gate.Rotation("practice", PracticeCubeView.Axis, turnDegrees * Math.PI / 180);
             elapsed = 0;
+            endAt = maxSeconds;
             round = 0;
             stepsDone = 0;
             firstRound.Clear();
             paused = false;
             Running = true;
             practiceRoot.SetActive(true);
-            StudyEvents.Log("orientation_start", $"duration={durationSeconds:F0} input={(desktop ? "mouse" : "controllers")}");
+            StudyEvents.Log("orientation_start", $"max={maxSeconds:F0} done_wait={doneSeconds:F0} input={(desktop ? "mouse" : "controllers")}");
             StartRound();
         }
 
@@ -134,12 +135,7 @@ namespace Study.Session
                 cube.SetAngle(ratchet.Angle);
                 arrow.SetAngle(ratchet.Angle);
             }
-            if (step == Step.RoundDone && elapsed >= roundDoneAt)
-            {
-                round++;
-                StartRound();
-            }
-            if (elapsed >= durationSeconds) End();
+            if (elapsed >= endAt) End();
         }
 
         void OnPicked(int index)
@@ -183,7 +179,7 @@ namespace Study.Session
             grab.SetGrabbable(false, desktop);
             Completed("rotate");
             step = Step.RoundDone;
-            roundDoneAt = elapsed + roundDoneSeconds;
+            endAt = Math.Min(maxSeconds, elapsed + doneSeconds);
             panel.SetBody(text.roundDone);
         }
 
@@ -197,7 +193,7 @@ namespace Study.Session
         void End()
         {
             Running = false;
-            int roundsDone = step == Step.RoundDone ? round + 1 : round;
+            int roundsDone = step == Step.RoundDone ? 1 : 0;
             if (roundsDone == 0)
             {
                 string missing = string.Join(";", new[] { "select", "press", "rotate" }.Where(s => !firstRound.Contains(s)));

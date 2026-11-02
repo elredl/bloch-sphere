@@ -16,11 +16,14 @@ namespace Study.Lesson
     //   hands on sphere    yes       no        yes   (place the prediction by moving a
     //                                                  vector, press the gate; mouse in
     //                                                  Cond 1, controllers in Cond 3)
+    //   makes the turns    no        no        yes   (every turn in the lesson: grab the
+    //                                                  tip and turn it along the guide;
+    //                                                  Cond 1/2 watch it play)
     //
     // Prediction questions, feedback and pause dimming are the same in every
     // condition, so they have no switch here. Cond 2 answers the placement question
-    // from a list and watches the turn. Cond 1 vs 3 isolates the display, Cond 2 vs 3
-    // the hands-on sphere.
+    // from a list and watches the turn. Cond 1 vs 3 isolates the display (and the
+    // lesson turns), Cond 2 vs 3 the hands-on sphere.
     public sealed class ConditionConfig
     {
         public readonly Condition Condition;
@@ -32,6 +35,7 @@ namespace Study.Lesson
 
         public bool UsesHeadset => Condition != Condition.Desktop2D;
         public bool LearnerRotates => Condition != Condition.PassiveVR;
+        public bool LearnerMakesTurns => Condition == Condition.EmbodiedVR;
 
         // Set once per session (the launch screen does this from allocation.csv in
         // Checkpoint 6). Null until then; the lesson falls back to its dev setting.
